@@ -13,10 +13,35 @@ CPMAddPackage(
     DOWNLOAD_EXTRACT_TIMESTAMP OFF
 )
 
+CPMAddPackage(
+	NAME rlimgui
+	GITHUB_REPOSITORY  raylib-extras/rlimgui
+	GIT_TAG MAIN
+)
+
+CPMAddPackage(
+	NAME imgui
+	GITHUB_REPOSITORY  ocornut/imgui
+	VERSION 1.89.8
+	OPTIONS
+	DOWNLOAD_ONLY
+)
+
 set(CLIENT_SOURCES
 	assets.cpp
 	pong.cpp
 	client.cpp
+
+	${rlimgui_SOURCE_DIR}/rlImGui.cpp
+
+	${CMAKE_SOURCE_DIR}/src/shared/state.cpp
+
+	${imgui_SOURCE_DIR}/imgui.cpp
+	${imgui_SOURCE_DIR}/imgui_demo.cpp
+	${imgui_SOURCE_DIR}/imgui_draw.cpp
+	${imgui_SOURCE_DIR}/imgui_widgets.cpp
+	${imgui_SOURCE_DIR}/imgui_tables.cpp
+
 )
 
 set(ENET_DIR ${CMAKE_SOURCE_DIR}/src/libs/enet)
@@ -38,6 +63,8 @@ target_include_directories(client PRIVATE
 	${CMAKE_SOURCE_DIR}/src/shared
 	${ENET_DIR}/include
 
+	${rlimgui_SOURCE_DIR}
+	${imgui_SOURCE_DIR}
 	${nlohmann_json_SOURCE_DIR}/single_include
 )
 

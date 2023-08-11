@@ -4,8 +4,13 @@
 
 namespace Net {
 	bool IsConnected();
+	std::string GetClientName();
 	bool InitClient();
-	Message Poll();
-	void Ping();
+	Message PollServer();
 	void Shutdown();
+
+	namespace Request {
+		void Ping();
+		void ListLobbies();
+	}
 }

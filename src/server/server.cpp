@@ -1,49 +1,52 @@
 #include <spdlog/spdlog.h>
-
 #include <enet/enet.h>
+#include <nlohmann/json.hpp>
+
+#include <string>
+#include <array>
 
 #include "state.h"
 
-static std::unordered_map<std::string, ENetPeer*> ClientNames;
+static ServerState* serverState = nullptr;
 
-void ProcessMessage(ENetHost* server, ENetEvent& event, const Message& message) {
+Client GetClientFromPeer(ENetPeer& peer) {
+	for (Client& client : serverState->connectedClients) {
+		std::string name = GenerateClientName(&peer);
+		if (client.name == name) {
+			return client;
+		}
+	}
+
+	return CreateClientFromPeer(&peer);
+}
+
+void RespondToClient(const Message& message, ENetHost& server, ENetEvent& event) {
+	std::string response = nlohmann::json(message).dump();
+
+	ENetPacket* responsePacket = enet_packet_create(response.c_str(),
+		response.size(),
+		ENET_PACKET_FLAG_RELIABLE);
+
+	enet_peer_send(event.peer, 0, responsePacket);
+	//enet_packet_destroy(event.packet);
+}
+
+void ProcessMessage(ENetHost& server, ENetEvent& event, const Message& message) {
 	spdlog::info("Parsing message: Type: '{}' Data: {}",
 		MessageTypeString[message.type], message.data);
 
 	switch (message.type) {
-	case MessageType_Ping: {
-		Message message = {
-			MessageType_Pong, "Pong!"
-		};
-
-		std::string response = nlohmann::json(message).dump();
-
-		ENetPacket* responsePacket = enet_packet_create(response.c_str(),
-			response.size(),
-			ENET_PACKET_FLAG_RELIABLE);
-
-		enet_peer_send(event.peer, 0, responsePacket);
-		enet_packet_destroy(event.packet);
-	} break;
-
-	case MessageType_ListRooms: {
-
-	} break;
-
-	case MessageType_SetClientName: {
-		if (ClientNames.find(message.data) != ClientNames.end()) {
-			ClientNames[message.data] = event.peer;
-		}
-	} break;
-
-	default: {
-		spdlog::error("Unknown message recieved ({}), exiting", message.type);
-		exit(EXIT_FAILURE);
-	} break;
+	case MessageType_Ping: RespondToClient({ MessageType_Pong, "Pong!" }, server, event); break;
+	case MessageType_ListLobbies: RespondToClient({ message.type, nlohmann::json(*serverState).dump() }, server, event); break;
+	default: spdlog::error("Unknown message recieved ({} - {}), exiting", message.type, message.data); break;
 	}
+
+	//enet_packet_destroy(event.packet);
 }
 
 int main() {
+	serverState = new ServerState;
+
 	spdlog::info("Initialising ENet.");
 	if (enet_initialize() != 0) {
 		spdlog::error("An error occured while initialising Enet.");
@@ -67,22 +70,33 @@ int main() {
 		while (enet_host_service(server, &event, 1000) > 0) {
 			switch (event.type) {
 			case ENET_EVENT_TYPE_CONNECT: {
-				spdlog::info("A new client connection from {}:{}.", event.peer->address.host, event.peer->address.port);
+				Client client = CreateClientFromPeer(event.peer);
+
+				spdlog::info("Adding client {} to connected clients.", client.name);
+				serverState->connectedClients.push_back(client);
+
+				RespondToClient({ MessageType_ClientReceiveName, client.name }, *server, event);
 			} break;
 
 			case ENET_EVENT_TYPE_RECEIVE: {
-				spdlog::info("A packet of length {} containing {} was received from {} on channel {}.",
+				std::string packetStr((char*)event.packet->data, event.packet->dataLength);
+				spdlog::info("A packet of length {} containing '{}' was received from {} on channel {}.",
 					event.packet->dataLength,
-					(const char*)event.packet->data,
+					packetStr,
 					event.peer->data,
 					event.channelID);
 
 				Message message = ParseMessage((char*)event.packet->data, event.packet->dataLength);
-				ProcessMessage(server, event, message);
+				ProcessMessage(*server, event, message);
 			} break;
 
 			case ENET_EVENT_TYPE_DISCONNECT: {
-				spdlog::info("{} disconnected.", event.peer->data);
+				spdlog::info("Disconnecting client {} from connected clients.", event.peer->data);
+				auto& connectedClients = serverState->connectedClients;
+				connectedClients.erase(std::remove_if(connectedClients.begin(), connectedClients.end(),
+					[&](const Client& client) {
+						return client.name == std::to_string(event.peer->address.host);
+					}), connectedClients.end());
 			} break;
 
 			default: break;

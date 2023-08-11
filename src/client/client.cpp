@@ -8,12 +8,15 @@
 static ENetAddress address;
 static ENetHost* client;
 static ENetPeer* peer;
-static ENetEvent event;
 static int eventStatus;
 static bool connected = false;
 
+static std::string clientName;
+
 namespace Net {
 	bool IsConnected() { return connected; }
+
+	std::string GetClientName() { return clientName; }
 
 	bool InitClient() {
 		if (enet_initialize() != 0) {
@@ -43,14 +46,13 @@ namespace Net {
 		return true;
 	}
 
-
-	Message Poll() {
+	Message PollServer() {
 		Message message = { MessageType_None };
 
-		eventStatus = enet_host_service(client, &event, 0);
+		ENetEvent event;
 
 		// If we had some event that interested us
-		if (eventStatus > 0) {
+		while (enet_host_service(client, &event, 0)) {
 			switch (event.type) {
 			case ENET_EVENT_TYPE_CONNECT: {
 				spdlog::info("We got a new connection from {}", event.peer->address.host);
@@ -63,6 +65,18 @@ namespace Net {
 					std::string((const char*)event.packet->data, event.packet->dataLength));
 
 				message = ParseMessage((const char*)event.packet->data, event.packet->dataLength);
+				spdlog::info("Parsed mesaage type: {} data: {}", MessageTypeString[message.type], message.data);
+
+				switch (message.type) {
+				case MessageType_ClientReceiveName: {
+					clientName = message.data;
+				} break;
+				case MessageType_Pong:
+					break;
+
+				default: break;
+				}
+
 				enet_packet_destroy(event.packet);
 			} break;
 
@@ -76,20 +90,48 @@ namespace Net {
 		return message;
 	}
 
-	void Ping() {
-		if (connected) {
-			Message msg = {
-				MessageType_Ping, ""
-			};
-			std::string msgString = nlohmann::json(msg).dump();
+	void SendRequestToServer(const Message& message) {
+		std::string msgString = nlohmann::json(message).dump();
 
-			ENetPacket* packet = enet_packet_create(msgString.c_str(), msgString.size(), ENET_PACKET_FLAG_RELIABLE);
-			enet_peer_send(peer, 0, packet);
-		}
+		ENetPacket* packet = enet_packet_create(msgString.c_str(), msgString.size(), ENET_PACKET_FLAG_RELIABLE);
+		enet_peer_send(peer, 0, packet);
+
 	}
 
 	void Shutdown() {
+		enet_peer_disconnect(peer, 0);
+
+		// Wait up to 3 seconds for the disconnect to complete gracefully
+		ENetEvent event;
+		while (enet_host_service(client, &event, 3000) > 0) {
+			if (event.type == ENET_EVENT_TYPE_DISCONNECT) {
+				fmt::print("Disconnection succeeded.\n");
+				break;
+			}
+		}
+
 		enet_peer_reset(peer);
 		enet_host_destroy(client);
 	}
+
+	namespace Request {
+		void Ping() {
+			if (connected) {
+				SendRequestToServer({ MessageType_Ping });
+			}
+			else {
+				InitClient();
+			}
+		}
+
+		void ListLobbies() {
+			if (connected) {
+				SendRequestToServer({ MessageType_ListLobbies });
+			}
+			else {
+				InitClient();
+			}
+		}
+	}
+
 }

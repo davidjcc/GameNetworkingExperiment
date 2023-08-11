@@ -8,8 +8,9 @@ namespace fs = std::filesystem;
 #include <raylib.h>
 #include <nlohmann/json.hpp>
 
-#define RAYGUI_IMPLEMENTATION
-#include "raygui.h"
+//#define RAYGUI_IMPLEMENTATION
+//#include "raygui.h"
+#include "rlImGui.h"
 
 #include "state.h"
 #include "assets.h"
@@ -30,6 +31,7 @@ namespace fs = std::filesystem;
 #define RESET_TIME 2.0f
 
 static std::string s_assetsDir = "assets";
+static nlohmann::json lobbies;
 
 static int GetRandomDirection() {
 	return GetRandomValue(0, 100) > 50 ? -1 : 1;
@@ -234,30 +236,54 @@ bool IsInPlayingState(const GameState& state) {
 	case GameState_JoinGame:
 		return true;
 
-	case GameState_MenuMultiPlayer:
-	case GameState_PlayingMultiPlayer:
+	default:
 		return false;
 
 	}
-
 }
 
 static char CreateGameLobbyName[128];
 static char JoinGameServerAddress[128];
 
-static void DrawMenu(GameState& gameState, State& state) {
+static void DrawServerStatus(GameState& gameState) {
 	if (!IsInPlayingState(gameState)) {
-		DrawText("Server status: ", ((WINDOW_WIDTH / 2) - MeasureText("Server status: ", 50) / 2), 10, 50, WHITE);
+		DrawText("Server status: ", 10, WINDOW_HEIGHT - 20, 20, WHITE);
 
 		std::string status = Net::IsConnected() ? "Connected" : "Disconnected";
 		if (Net::IsConnected()) {
+			float xPos = 10 + MeasureText("Server status: ", 20);
+			DrawText(status.c_str(), xPos, WINDOW_HEIGHT - 20, 20, GREEN);
 
+			std::string clientName = fmt::format("Client Name: {}", Net::GetClientName());
+			xPos += MeasureText(clientName.c_str(), 20);
+			DrawText(clientName.c_str(), xPos, WINDOW_HEIGHT - 20, 20, WHITE);
 		}
 		else {
-
+			DrawText(status.c_str(), 10 + MeasureText("Server status: ", 20), WINDOW_HEIGHT - 20, 20, RED);
 		}
 
+		if (lobbies.empty()) {
+			DrawText("No lobbies found", 10, WINDOW_HEIGHT - 40, 20, WHITE);
+		}
+		else {
+			DrawText("Lobbies:", 10, WINDOW_HEIGHT - 40, 20, WHITE);
+#if 0
+			LobbyList parsed = lobbies.get<LobbyList>();
+
+			float yCursor = WINDOW_HEIGHT - 60;
+			for (const auto& lobby : parsed) {
+				std::string lobbyName = fmt::format("{} - {} players", lobby.name);
+				DrawText(lobbyName.c_str(), 10, yCursor, 20, WHITE);
+				yCursor -= 20;
+			}
+#endif
+		}
 	}
+
+}
+
+static void DrawMenu(GameState& gameState, State& state) {
+	DrawServerStatus(gameState);
 
 	switch (gameState) {
 	case GameState_Menu: {
@@ -267,6 +293,7 @@ static void DrawMenu(GameState& gameState, State& state) {
 		float buttonW = 200.0f;
 		float buttonH = 50.0f;
 
+#if 0
 		if (GuiButton(Rectangle{ WINDOW_WIDTH / 2 - buttonW / 2.0f, yCursor, buttonW, buttonH }, "Single Player")) {
 			gameState = GameState_PlayingSinglePlayer;
 			Init(state, true, false, true, false);
@@ -280,21 +307,25 @@ static void DrawMenu(GameState& gameState, State& state) {
 
 		yCursor += buttonH + 10;
 		if (GuiButton(Rectangle{ WINDOW_WIDTH / 2 - 100, yCursor, buttonW, buttonH }, "Test Client Ping")) {
-			Net::Ping();
+			Net::Request::Ping();
 		}
+#endif
 
 	} break;
 
 	case GameState_MenuMultiPlayer: {
 		DrawText("MULTIPLAYER", ((WINDOW_WIDTH / 2) - MeasureText("MULTIPLAYER", 50) / 2), 10, 50, WHITE);
+#if 0
 		if (GuiButton(Rectangle{ WINDOW_WIDTH - 100, 10, 50, 50 }, "CLOSE")) {
 			gameState = GameState_Menu;
 		}
+#endif
 
 		float yCursor = 100.0f;
 		float buttonW = 200.0f;
 		float buttonH = 50.0f;
 
+#if 0
 		if (GuiButton(Rectangle{ WINDOW_WIDTH / 2 - buttonW / 2.0f, yCursor, buttonW, buttonH }, "Create Game")) {
 			gameState = GameState_CreateGameInput;
 		}
@@ -304,11 +335,13 @@ static void DrawMenu(GameState& gameState, State& state) {
 			gameState = GameState_JoinGame;
 
 		}
+#endif
 	} break;
 
 	case GameState_CreateGameInput: {
 		DrawText("CREATE GAME", ((WINDOW_WIDTH / 2) - MeasureText("CREATE GAME", 50) / 2), 10, 50, WHITE);
 
+#if 0
 		int result = GuiTextInputBox(Rectangle{ WINDOW_WIDTH / 2 - 120, WINDOW_HEIGHT / 2 - 60, 240, 140 }, "", "Enter the Lobby name", "Ok;Cancel", CreateGameLobbyName, 128, NULL);
 		if (result == 1) {
 			// Transition to new online game.
@@ -317,11 +350,13 @@ static void DrawMenu(GameState& gameState, State& state) {
 			strcpy_s(CreateGameLobbyName, sizeof(CreateGameLobbyName), "\0");
 			gameState = GameState_MenuMultiPlayer;
 		}
+#endif
 	} break;
 
 	case GameState_JoinGame: {
 		DrawText("JOIN GAME", ((WINDOW_WIDTH / 2) - MeasureText("JOIN GAME", 50) / 2), 10, 50, WHITE);
 
+#if 0
 		int result = GuiTextInputBox(Rectangle{ WINDOW_WIDTH / 2 - 120, WINDOW_HEIGHT / 2 - 60, 240, 140 }, "", "Enter the server address", "Ok;Cancel", JoinGameServerAddress, 128, NULL);
 		if (result == 1) {
 			// Transition to joined game.
@@ -330,6 +365,7 @@ static void DrawMenu(GameState& gameState, State& state) {
 			strcpy_s(JoinGameServerAddress, sizeof(JoinGameServerAddress), "\0");
 			gameState = GameState_MenuMultiPlayer;
 		}
+#endif
 	} break;
 	}
 }
@@ -350,8 +386,8 @@ int main(int argc, char* argv[])
 
 	GameState gameState = GameState_Menu;
 
-	GuiLoadStyleDefault();
-
+	//GuiLoadStyleDefault();
+	rlImGuiSetup(true);
 
 	Init(state, true, true, true, true);
 	if (!Net::InitClient()) {
@@ -375,11 +411,31 @@ int main(int argc, char* argv[])
 				DrawText(TextFormat("%i", state.right.score), WINDOW_WIDTH - 100, WINDOW_HEIGHT - 50, 50, colour);
 			}
 
-			if (Message message = Net::Poll(); message.type != MessageType_None) {
+			if (Message message = Net::PollServer(); message.type != MessageType_None) {
+				switch (message.type) {
+				case MessageType_Ping: {
+				} break;
+
+				case MessageType_ListLobbies: {
+					lobbies = nlohmann::json::parse(message.data);
+				} break;
+				default:
+					fmt::print("Unknown message type: {}\n", MessageTypeString[message.type]);
+					break;
+				}
 			}
 
 			Update(state);
 			Draw(state);
+
+			rlImGuiBegin();
+			{
+				ImGui::Begin("Test");
+				ImGui::Text("Testing text");
+				ImGui::End();
+			}
+			rlImGuiEnd();
+
 
 			DrawMenu(gameState, state);
 
@@ -400,6 +456,7 @@ int main(int argc, char* argv[])
 		}
 		EndDrawing();
 	}
+	rlImGuiShutdown();
 
 	Net::Shutdown();
 	UnloadAssets();
