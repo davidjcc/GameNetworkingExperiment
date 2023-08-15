@@ -1,6 +1,7 @@
 #pragma once
 
 #include <nlohmann/json.hpp>
+#include <fmt/format.h>
 
 #define ARRAY_COUNT(arr) (sizeof(arr) / sizeof(arr[0]))
 
@@ -13,6 +14,8 @@ enum MessageType {
 	MessageType_ClientReceiveName,
 
 	MessageType_ListLobbies,
+	MessageType_CreateLobby,
+	MessageType_JoinLobby,
 
 	MessageType_Success,
 	MessageType_Failure,
@@ -28,20 +31,22 @@ static const char* MessageTypeString[MessageType_Count] = {
 
 	"MessageType_ClientReceiveName",
 
-	"MessageType_ListLobbies"
+	"MessageType_ListLobbies",
+	"MessageType_CreateLobby",
+	"MessageType_JoinLobby",
 
-	"MessageType_Success"
+	"MessageType_Success",
 	"MessageType_Failure"
 };
 static_assert(ARRAY_COUNT(MessageTypeString) == MessageType_Count, "MessageTypeString does not match MessageType_Count");
 
 struct Message {
 	MessageType type;
-
 	std::string data;
+	std::string clientId;
 };
 
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(Message, type, data);
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(Message, type, data, clientId);
 
 /**
 * @brief Parses a message from a string.
@@ -75,7 +80,8 @@ struct State {
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(State, left, right, ball, resetTimer);
 
 enum ClientStatus {
-	ClientStatus_Connected = 0,
+	ClientStatus_None = 0,
+	ClientStatus_Connected,
 	ClientStatus_InLobby,
 	ClientStatus_InGame,
 
@@ -83,6 +89,7 @@ enum ClientStatus {
 };
 
 static const char* ClientStatusString[ClientStatus_Count] = {
+	"ClientStatus_None",
 	"ClientStatus_Connected",
 	"ClientStatus_InLobby",
 	"ClientStatus_InGame",
@@ -90,10 +97,28 @@ static const char* ClientStatusString[ClientStatus_Count] = {
 static_assert(ARRAY_COUNT(ClientStatusString) == ClientStatus_Count, "ClientStatusString does not match ClientStatus_Count");
 
 struct Client {
-	ClientStatus status;
+	ClientStatus status = ClientStatus_None;
 	std::string name;
+
+	std::string ToJsonString(int indent = -1) {
+		auto json = ToJson();
+		return json.dump(indent);
+	}
+
+
+	nlohmann::json ToJson() {
+		return {
+			{"clientStatus", status},
+			{"name", name}
+		};
+	}
+
+	void FromJson(const nlohmann::json& json) {
+		status = json.value("clientStatus", ClientStatus_Connected);
+		name = json.value("name", "empty");
+	}
 };
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(Client, status, name);
+
 
 /**
 * @brief Generates a client name from a peer.
@@ -105,22 +130,62 @@ std::string GenerateClientName(void* peer);
 
 /**
 * @brief Creates a client from a peer.
-* 
+*
 * @param peer The peer to create a client from.
 * @return Client The created client.
 */
 Client CreateClientFromPeer(void* peer);
 
+struct InitLobby {
+	std::string name;
+
+	std::string ToJsonString(int indent = -1) {
+		auto json = ToJson();
+		return json.dump(indent);
+	}
+
+
+	nlohmann::json ToJson() {
+		return {
+			{"name", name}
+		};
+	}
+
+	void FromJson(const nlohmann::json& json) {
+		name = json.value("name", "empty");
+	}
+};
+
 #define MAX_CLIENTS_PER_LOBBY 2
 struct Lobby {
+	Lobby() {
+		for (size_t i = 0; i < MAX_CLIENTS_PER_LOBBY; ++i) {
+			clients[i] = nullptr;
+		}
+	}
+
 	std::string name;
 	size_t id;
 
 	std::array<Client*, MAX_CLIENTS_PER_LOBBY> clients;
-};
-void to_json(nlohmann::json& nlohmann_json_j, const Lobby& nlohmann_json_t);
-void from_json(const nlohmann::json& nlohmann_json_j, Lobby& nlohmann_json_t);
 
+	std::string ToJsonString(int indent = -1) {
+		auto json = ToJson();
+		return json.dump(indent);
+	}
+
+	nlohmann::json ToJson() {
+		return {
+			{"name", name},
+			{"id", id}
+		};
+	}
+
+	void FromJson(const nlohmann::json& json) {
+		name = json.value("name", "empty");
+		id = json.value("id", 0);
+	}
+};
 using LobbyList = std::vector<Lobby>;
 
 struct ServerState {
@@ -128,7 +193,41 @@ struct ServerState {
 	size_t activeLobbies = 0;
 
 	std::vector<Client> connectedClients;
+
+	std::string ToJsonString(int indent = -1) {
+		auto json = ToJson();
+		return json.dump(indent);
+	}
+
+
+	nlohmann::json ToJson() {
+		nlohmann::json result = {
+			{"activeLobbies", activeLobbies}
+		};
+		for (size_t i = 0; i < activeLobbies; ++i) {
+			result["lobbies"].push_back(lobbies[i].ToJson());
+		}
+		return result;
+	}
+
+	void FromJson(const nlohmann::json& json) {
+		auto lobbiesJson = json.contains("lobbies") ? json["lobbies"] : nlohmann::json();
+		for (auto& lobbyJson : lobbiesJson) {
+			Lobby lobby;
+			lobby.FromJson(lobbyJson);
+			lobbies.push_back(lobby);
+		}
+
+		activeLobbies = json.value("activeLobbies", 0);
+
+		auto connectedClientsJson = json.contains("connectedClients") ? json["connectedClients"] : nlohmann::json();
+		for (auto& clientJson : connectedClientsJson) {
+			Client client;
+			client.FromJson(clientJson);
+			connectedClients.push_back(client);
+		}
+	}
 };
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(ServerState, lobbies, activeLobbies);
+
 
 

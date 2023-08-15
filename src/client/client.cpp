@@ -1,4 +1,5 @@
 #include "client.h"
+
 #include "state.h"
 
 #include <enet/enet.h>
@@ -13,6 +14,7 @@ static bool connected = false;
 
 static std::string clientName;
 
+
 namespace Net {
 	bool IsConnected() { return connected; }
 
@@ -20,7 +22,7 @@ namespace Net {
 
 	bool InitClient() {
 		if (enet_initialize() != 0) {
-			spdlog::error("An error occured while initializing ENet.");
+			//spdlog::error("An error occured while initializing ENet.");
 			return false;
 		}
 
@@ -29,7 +31,7 @@ namespace Net {
 		client = enet_host_create(NULL, 1, 2, 0);
 
 		if (client == NULL) {
-			spdlog::error("An error occured while trying to create an ENet server host");
+			//spdlog::error("An error occured while trying to create an ENet server host");
 			return false;
 		}
 
@@ -39,7 +41,7 @@ namespace Net {
 		peer = enet_host_connect(client, &address, 2);
 
 		if (peer == NULL) {
-			spdlog::error("No available peers for initializing an ENet connection");
+			//spdlog::error("No available peers for initializing an ENet connection");
 			return false;
 		}
 
@@ -55,17 +57,17 @@ namespace Net {
 		while (enet_host_service(client, &event, 0)) {
 			switch (event.type) {
 			case ENET_EVENT_TYPE_CONNECT: {
-				spdlog::info("We got a new connection from {}", event.peer->address.host);
+				//spdlog::info("We got a new connection from {}", event.peer->address.host);
 				connected = true;
 			} break;
 
 			case ENET_EVENT_TYPE_RECEIVE: {
-				spdlog::info("Message recieved from server {}: '{}'",
-					event.peer->address.host,
-					std::string((const char*)event.packet->data, event.packet->dataLength));
+				//spdlog::info("Message recieved from server {}: '{}'",
+					//event.peer->address.host,
+					//std::string((const char*)event.packet->data, event.packet->dataLength));
 
 				message = ParseMessage((const char*)event.packet->data, event.packet->dataLength);
-				spdlog::info("Parsed mesaage type: {} data: {}", MessageTypeString[message.type], message.data);
+				//spdlog::info("Parsed mesaage type: {} data: {}", MessageTypeString[message.type], message.data);
 
 				switch (message.type) {
 				case MessageType_ClientReceiveName: {
@@ -81,7 +83,7 @@ namespace Net {
 			} break;
 
 			case ENET_EVENT_TYPE_DISCONNECT: {
-				spdlog::info("{} disconnected.", (const char*)event.peer->data);
+				//spdlog::info("{} disconnected.", (const char*)event.peer->data);
 				event.peer->data = NULL;
 			} break;
 			}
@@ -115,22 +117,33 @@ namespace Net {
 	}
 
 	namespace Request {
+#define REQUEST_FORMAT(TYPE, DATA) \
+	if (connected) { \
+		SendRequestToServer({TYPE, DATA}); \
+	}\
+	else { \
+		InitClient(); \
+	} 
+
+#define REQUEST_FORMAT_NO_DATA(TYPE) REQUEST_FORMAT(TYPE, "")
+
 		void Ping() {
-			if (connected) {
-				SendRequestToServer({ MessageType_Ping });
-			}
-			else {
-				InitClient();
-			}
+			REQUEST_FORMAT_NO_DATA(MessageType_Ping);
 		}
 
 		void ListLobbies() {
-			if (connected) {
-				SendRequestToServer({ MessageType_ListLobbies });
-			}
-			else {
-				InitClient();
-			}
+			REQUEST_FORMAT_NO_DATA(MessageType_ListLobbies);
+		}
+
+		void CreateLobby(const std::string& name) {
+			InitLobby lobby = {
+				.name = name,
+			};
+			REQUEST_FORMAT(MessageType_CreateLobby, lobby.ToJsonString());
+		}
+
+		void JoinLobby(const size_t id) {
+			REQUEST_FORMAT(MessageType_JoinLobby, std::to_string(id));
 		}
 	}
 

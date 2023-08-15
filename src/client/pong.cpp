@@ -8,11 +8,11 @@ namespace fs = std::filesystem;
 #include <raylib.h>
 #include <nlohmann/json.hpp>
 
-//#define RAYGUI_IMPLEMENTATION
-//#include "raygui.h"
 #include "rlImGui.h"
 
+#define JSON_SERIALISE_DEFINE
 #include "state.h"
+
 #include "assets.h"
 #include "client.h"
 
@@ -31,7 +31,6 @@ namespace fs = std::filesystem;
 #define RESET_TIME 2.0f
 
 static std::string s_assetsDir = "assets";
-static nlohmann::json lobbies;
 
 static int GetRandomDirection() {
 	return GetRandomValue(0, 100) > 50 ? -1 : 1;
@@ -261,25 +260,7 @@ static void DrawServerStatus(GameState& gameState) {
 		else {
 			DrawText(status.c_str(), 10 + MeasureText("Server status: ", 20), WINDOW_HEIGHT - 20, 20, RED);
 		}
-
-		if (lobbies.empty()) {
-			DrawText("No lobbies found", 10, WINDOW_HEIGHT - 40, 20, WHITE);
-		}
-		else {
-			DrawText("Lobbies:", 10, WINDOW_HEIGHT - 40, 20, WHITE);
-#if 0
-			LobbyList parsed = lobbies.get<LobbyList>();
-
-			float yCursor = WINDOW_HEIGHT - 60;
-			for (const auto& lobby : parsed) {
-				std::string lobbyName = fmt::format("{} - {} players", lobby.name);
-				DrawText(lobbyName.c_str(), 10, yCursor, 20, WHITE);
-				yCursor -= 20;
-			}
-#endif
-		}
 	}
-
 }
 
 static void DrawMenu(GameState& gameState, State& state) {
@@ -395,6 +376,9 @@ int main(int argc, char* argv[])
 		return EXIT_FAILURE;
 	}
 
+	ServerState serverState{};
+	Net::Request::ListLobbies();
+
 	bool running = true;
 	while (running)
 	{
@@ -417,8 +401,9 @@ int main(int argc, char* argv[])
 				} break;
 
 				case MessageType_ListLobbies: {
-					lobbies = nlohmann::json::parse(message.data);
+					serverState.FromJson(nlohmann::json::parse(message.data));
 				} break;
+
 				default:
 					fmt::print("Unknown message type: {}\n", MessageTypeString[message.type]);
 					break;
@@ -430,8 +415,50 @@ int main(int argc, char* argv[])
 
 			rlImGuiBegin();
 			{
-				ImGui::Begin("Test");
-				ImGui::Text("Testing text");
+				ImGui::Begin("Multi-player");
+				ImGui::Text("Server status: %s", Net::IsConnected() ? "Connected" : "Disconnected");
+
+				if (Net::IsConnected()) {
+					ImGui::Text("Client name: %s", Net::GetClientName().c_str());
+					if (ImGui::CollapsingHeader("Lobbies", ImGuiTreeNodeFlags_DefaultOpen)) {
+						if (ImGui::Button("Update")) {
+							Net::Request::ListLobbies();
+						}
+
+						static char lobbyName[64];
+						ImGui::Text("Enter Lobby Name: "); ImGui::SameLine();
+						ImGui::SetNextItemWidth(100.0f);
+						ImGui::InputText("##LOBBY_NAME", lobbyName, 64);
+						if (ImGui::Button("Create")) {
+							Net::Request::CreateLobby(lobbyName);
+							memset(lobbyName, 0, sizeof(lobbyName));
+						}
+
+						if (serverState.activeLobbies > 0) {
+							for (auto& lobby : serverState.lobbies) {
+								ImGui::Text("ID: %i", lobby.id);
+								ImGui::Text("Name: %s", lobby.name.c_str());
+								for (auto& client : lobby.clients) {
+									ImGui::Text("Client: %s", client ? client->name.c_str() : "(empty)");
+
+									if (client == nullptr) {
+										ImGui::SameLine();
+										ImGui::PushID(GetRandomValue(0, 3267));
+										if (ImGui::Button("Join")) {
+											Net::Request::JoinLobby(lobby.id);
+										}
+										ImGui::PopID();
+									}
+								}
+								ImGui::Text("");
+							}
+						}
+						else {
+							ImGui::Text("No lobbies");
+						}
+					}
+				}
+
 				ImGui::End();
 			}
 			rlImGuiEnd();

@@ -39,25 +39,4 @@ Client CreateClientFromPeer(void* peer) {
 	return client;
 }
 
-void to_json(nlohmann::json& nlohmann_json_j, const Lobby& nlohmann_json_t) {
-	nlohmann_json_j["name"] = nlohmann_json_t.name; 
-	nlohmann_json_j["id"] = nlohmann_json_t.id; 
-
-	for (size_t i = 0; i < nlohmann_json_t.clients.size(); ++i) {
-		std::string key = fmt::format("client_{}", i);
-		if (nlohmann_json_t.clients[i]) {
-			nlohmann_json_j["clients"][key] = nlohmann_json_t.clients[i]->name;
-		}
-		else {
-			nlohmann_json_j["clients"][key] = "empty";
-		}
-	}
-} 
-inline void from_json(const nlohmann::json& nlohmann_json_j, Lobby& nlohmann_json_t) {
-	Lobby nlohmann_json_default_obj; 
-	nlohmann_json_t.name = nlohmann_json_j.value("name", nlohmann_json_default_obj.name); 
-	nlohmann_json_t.id = nlohmann_json_j.value("id", nlohmann_json_default_obj.id); 
-	//nlohmann_json_t.clients = nlohmann_json_j.value("clients", nlohmann_json_default_obj.clients);
-};
-
 
