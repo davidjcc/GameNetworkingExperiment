@@ -438,16 +438,16 @@ int main(int argc, char* argv[])
 							for (auto& lobby : serverState.lobbies) {
 								ImGui::Text("ID: %i", lobby.id);
 								ImGui::Text("Name: %s", lobby.name.c_str());
+
+								int ctr = 0;
 								for (auto& client : lobby.clients) {
 									ImGui::Text("Client: %s", client ? client->name.c_str() : "(empty)");
 
 									if (client == nullptr) {
 										ImGui::SameLine();
-										ImGui::PushID(GetRandomValue(0, 3267));
-										if (ImGui::Button("Join")) {
+										if (ImGui::Button(fmt::format("Join##{}", ctr++).c_str())) {
 											Net::Request::JoinLobby(lobby.id);
 										}
-										ImGui::PopID();
 									}
 								}
 								ImGui::Text("");
@@ -457,6 +457,12 @@ int main(int argc, char* argv[])
 							ImGui::Text("No lobbies");
 						}
 					}
+				}
+
+				if (ImGui::Begin("Server state")) {
+					std::string json = serverState.ToJsonString(2);
+					ImGui::Text(json.c_str());
+					ImGui::End();
 				}
 
 				ImGui::End();
