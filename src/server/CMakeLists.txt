@@ -2,10 +2,6 @@
 # Server executable
 #####################
 
-CPMAddPackage("gh:fmtlib/fmt#10.0.0")
-CPMAddPackage("gh:nlohmann/json@3.11.2")
-CPMAddPackage("gh:gabime/spdlog@1.12.0")
-
 set(SERVER_SOURCES
 	server.cpp
 	${CMAKE_SOURCE_DIR}/src/shared/state.cpp
