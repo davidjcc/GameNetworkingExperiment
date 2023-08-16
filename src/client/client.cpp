@@ -1,9 +1,10 @@
 #include "client.h"
 
+#include <spdlog/spdlog.h>
+
 #include "state.h"
 
 #include <enet/enet.h>
-#include <spdlog/spdlog.h>
 #include <iostream>
 
 static ENetAddress address;
@@ -48,9 +49,7 @@ namespace Net {
 		return true;
 	}
 
-	Message PollServer() {
-		Message message = { MessageType_None };
-
+	void PollServer(PollCallback cb) {
 		ENetEvent event;
 
 		// If we had some event that interested us
@@ -66,20 +65,27 @@ namespace Net {
 					//event.peer->address.host,
 					//std::string((const char*)event.packet->data, event.packet->dataLength));
 
-				message = ParseMessage((const char*)event.packet->data, event.packet->dataLength);
-				//spdlog::info("Parsed mesaage type: {} data: {}", MessageTypeString[message.type], message.data);
+				if (event.packet->dataLength == sizeof(Packet)) {
+					Packet* packet = (Packet*)event.packet->data;
+					if (packet) {
+						switch (packet->type) {
+						case PACKET_TYPE_CLIENT_RECEIVE_NAME: {
+							clientName = packet->data;
+						} break;
 
-				switch (message.type) {
-				case MessageType_ClientReceiveName: {
-					clientName = message.data;
-				} break;
-				case MessageType_Pong:
-					break;
+						case PACKET_TYPE_PONG:
+						default: break;
+						}
 
-				default: break;
+						cb(*packet);
+					}
+				}
+				else {
+					// TODO(DC): error msg.
 				}
 
-				enet_packet_destroy(event.packet);
+				//spdlog::info("Parsed mesaage type: {} data: {}", MessageTypeString[message.type], message.data);
+				//enet_packet_destroy(event.packet);
 			} break;
 
 			case ENET_EVENT_TYPE_DISCONNECT: {
@@ -88,16 +94,10 @@ namespace Net {
 			} break;
 			}
 		}
-
-		return message;
 	}
 
-	void SendRequestToServer(const Message& message) {
-		std::string msgString = nlohmann::json(message).dump();
-
-		ENetPacket* packet = enet_packet_create(msgString.c_str(), msgString.size(), ENET_PACKET_FLAG_RELIABLE);
-		enet_peer_send(peer, 0, packet);
-
+	void SendRequestToServer(const Packet& packet) {
+		enet_peer_send(peer, 0, enet_packet_create(&packet, sizeof(Packet), ENET_PACKET_FLAG_RELIABLE));
 	}
 
 	void Shutdown() {
@@ -117,33 +117,37 @@ namespace Net {
 	}
 
 	namespace Request {
-#define REQUEST_FORMAT(TYPE, DATA) \
+#define SEND_REQUEST(PACKET) \
 	if (connected) { \
-		SendRequestToServer({TYPE, DATA}); \
+		SendRequestToServer(PACKET); \
 	}\
 	else { \
 		InitClient(); \
 	} 
 
-#define REQUEST_FORMAT_NO_DATA(TYPE) REQUEST_FORMAT(TYPE, "")
-
-		void Ping() {
-			REQUEST_FORMAT_NO_DATA(MessageType_Ping);
-		}
-
-		void ListLobbies() {
-			REQUEST_FORMAT_NO_DATA(MessageType_ListLobbies);
+		void Ping(const uint32_t timestamp) {
+			Packet packet = {
+				.type = PACKET_TYPE_PING,
+				.data = "",
+				.timestampMs = timestamp
+			};
+			SEND_REQUEST(packet);
 		}
 
 		void CreateLobby(const std::string& name) {
-			InitLobby lobby = {
-				.name = name,
+			Packet packet = {
+				.type = PACKET_TYPE_CREATE_LOBBY,
+				.data = name,
 			};
-			REQUEST_FORMAT(MessageType_CreateLobby, lobby.ToJsonString());
+			SEND_REQUEST(packet);
 		}
 
 		void JoinLobby(const size_t id) {
-			REQUEST_FORMAT(MessageType_JoinLobby, std::to_string(id));
+			Packet packet = {
+				.type = PACKET_TYPE_JOIN_LOBBY,
+				.data = std::to_string(id),
+			};
+			SEND_REQUEST(packet);
 		}
 	}
 

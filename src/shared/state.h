@@ -3,81 +3,10 @@
 #include <nlohmann/json.hpp>
 #include <fmt/format.h>
 
+#include <cstdint>
+
 #define ARRAY_COUNT(arr) (sizeof(arr) / sizeof(arr[0]))
 
-enum MessageType {
-	MessageType_None = 0,
-
-	MessageType_Ping,
-	MessageType_Pong,
-
-	MessageType_ClientReceiveName,
-
-	MessageType_ListLobbies,
-	MessageType_CreateLobby,
-	MessageType_JoinLobby,
-
-	MessageType_Success,
-	MessageType_Failure,
-
-	MessageType_Count,
-};
-
-static const char* MessageTypeString[MessageType_Count] = {
-	"MessageType_None",
-
-	"MessageType_Ping",
-	"MessageType_Pong",
-
-	"MessageType_ClientReceiveName",
-
-	"MessageType_ListLobbies",
-	"MessageType_CreateLobby",
-	"MessageType_JoinLobby",
-
-	"MessageType_Success",
-	"MessageType_Failure"
-};
-static_assert(ARRAY_COUNT(MessageTypeString) == MessageType_Count, "MessageTypeString does not match MessageType_Count");
-
-struct Message {
-	MessageType type;
-	std::string data;
-	std::string clientId;
-};
-
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(Message, type, data, clientId);
-
-/**
-* @brief Parses a message from a string.
-*
-* @param data The string to parse.
-* @return Message The parsed message.
-*/
-Message ParseMessage(const char* data, size_t dataLength);
-
-struct Player {
-	float x, y, width, height;
-	bool isAi = false;
-	float score;
-};
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(Player, x, y, width, height, isAi, score);
-
-struct Ball {
-	float x, y, width, height;
-	float velX, velY;
-	float speed;
-};
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(Ball, x, y, width, height, velX, velY, speed);
-
-struct State {
-	Player left;
-	Player right;
-	Ball ball = {};
-	float resetTimer = 0.0f;
-	bool isDemo = false;
-};
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(State, left, right, ball, resetTimer);
 
 enum ClientStatus {
 	ClientStatus_None = 0,
@@ -96,30 +25,6 @@ static const char* ClientStatusString[ClientStatus_Count] = {
 };
 static_assert(ARRAY_COUNT(ClientStatusString) == ClientStatus_Count, "ClientStatusString does not match ClientStatus_Count");
 
-struct Client {
-	ClientStatus status = ClientStatus_None;
-	std::string name;
-
-	std::string ToJsonString(int indent = -1) {
-		auto json = ToJson();
-		return json.dump(indent);
-	}
-
-
-	nlohmann::json ToJson() {
-		return {
-			{"clientStatus", status},
-			{"name", name}
-		};
-	}
-
-	void FromJson(const nlohmann::json& json) {
-		status = json.value("clientStatus", ClientStatus_Connected);
-		name = json.value("name", "empty");
-	}
-};
-
-
 /**
 * @brief Generates a client name from a peer.
 *
@@ -134,99 +39,98 @@ std::string GenerateClientName(void* peer);
 * @param peer The peer to create a client from.
 * @return Client The created client.
 */
-Client CreateClientFromPeer(void* peer);
-
-struct InitLobby {
-	std::string name;
-
-	std::string ToJsonString(int indent = -1) {
-		auto json = ToJson();
-		return json.dump(indent);
-	}
-
-
-	nlohmann::json ToJson() {
-		return {
-			{"name", name}
-		};
-	}
-
-	void FromJson(const nlohmann::json& json) {
-		name = json.value("name", "empty");
-	}
-};
+std::string CreateClientFromPeer(void* peer);
 
 #define MAX_CLIENTS_PER_LOBBY 2
 struct Lobby {
-	Lobby() {
-		for (size_t i = 0; i < MAX_CLIENTS_PER_LOBBY; ++i) {
-			clients[i] = nullptr;
-		}
-	}
-
 	std::string name;
 	size_t id;
 
-	std::array<Client*, MAX_CLIENTS_PER_LOBBY> clients;
-
-	std::string ToJsonString(int indent = -1) {
-		auto json = ToJson();
-		return json.dump(indent);
-	}
-
-	nlohmann::json ToJson() {
-		return {
-			{"name", name},
-			{"id", id}
-		};
-	}
-
-	void FromJson(const nlohmann::json& json) {
-		name = json.value("name", "empty");
-		id = json.value("id", 0);
-	}
+	std::array<std::string, MAX_CLIENTS_PER_LOBBY> clients;
 };
 using LobbyList = std::vector<Lobby>;
 
 struct ServerState {
 	LobbyList lobbies;
 	size_t activeLobbies = 0;
+};
 
-	std::vector<Client> connectedClients;
+inline nlohmann::json ServerStateToJson(const ServerState& state) {
+	nlohmann::json result = {
+		{"activeLobbies", state.activeLobbies}
+	};
 
-	std::string ToJsonString(int indent = -1) {
-		auto json = ToJson();
-		return json.dump(indent);
+	for (size_t i = 0; i < state.activeLobbies; ++i) {
+		nlohmann::json lobby = {
+			{"name", state.lobbies[i].name},
+			{"id", state.lobbies[i].id},
+			{"clients", state.lobbies[i].clients}
+		};
+
+		result["lobbies"].push_back(lobby);
 	}
 
+	return result;
+}
 
-	nlohmann::json ToJson() {
-		nlohmann::json result = {
-			{"activeLobbies", activeLobbies}
-		};
-		for (size_t i = 0; i < activeLobbies; ++i) {
-			result["lobbies"].push_back(lobbies[i].ToJson());
-		}
+inline ServerState JsonToServerState(const std::string& jsonStr) {
+	ServerState result{};
+
+	if (jsonStr.empty()) {
 		return result;
 	}
 
-	void FromJson(const nlohmann::json& json) {
-		auto lobbiesJson = json.contains("lobbies") ? json["lobbies"] : nlohmann::json();
-		for (auto& lobbyJson : lobbiesJson) {
-			Lobby lobby;
-			lobby.FromJson(lobbyJson);
-			lobbies.push_back(lobby);
-		}
+	auto json = nlohmann::json::parse(jsonStr);
 
-		activeLobbies = json.value("activeLobbies", 0);
-
-		auto connectedClientsJson = json.contains("connectedClients") ? json["connectedClients"] : nlohmann::json();
-		for (auto& clientJson : connectedClientsJson) {
-			Client client;
-			client.FromJson(clientJson);
-			connectedClients.push_back(client);
-		}
+	if (json.empty()) {
+		return result;
 	}
+
+	result.activeLobbies = json.value("activeLobbies", 0);
+	for (uint32_t i = 0; i < result.activeLobbies; ++i) {
+		Lobby lobby;
+		lobby.name = json["lobbies"][i].value("name", "");
+		lobby.id = json["lobbies"][i].value("id", 0);
+		lobby.clients = json["lobbies"][i].value("clients", std::array<std::string, MAX_CLIENTS_PER_LOBBY>());
+
+		result.lobbies.push_back(lobby);
+	}
+
+	return result;
+}
+
+enum PacketType {
+	PACKET_TYPE_NONE = 0,
+
+	PACKET_TYPE_PING,
+	PACKET_TYPE_PONG,
+
+	PACKET_TYPE_CLIENT_RECEIVE_NAME,
+
+	PACKET_TYPE_CREATE_LOBBY,
+	PACKET_TYPE_JOIN_LOBBY,
+
+	PACKET_TYPE_COUNT,
+};
+
+inline const char* PacketTypeToString(PacketType type) {
+	switch (type) {
+	case PACKET_TYPE_NONE: return "PACKET_TYPE_NONE";
+	case PACKET_TYPE_PING: return "PACKET_TYPE_PING";
+	case PACKET_TYPE_PONG: return "PACKET_TYPE_PONG";
+	case PACKET_TYPE_CLIENT_RECEIVE_NAME: return "PACKET_TYPE_CLIENT_RECEIVE_NAME";
+	case PACKET_TYPE_CREATE_LOBBY: return "PACKET_TYPE_CREATE_LOBBY";
+	case PACKET_TYPE_JOIN_LOBBY: return "PACKET_TYPE_JOIN_LOBBY";
+	default: assert(0 && "unreachable");  return "Unknown PacketType";
+	}
+}
+
+struct Packet {
+	PacketType type;
+	std::string data;
+	std::string clientId;
+	uint32_t timestampMs = 0;
+	char state[1024 * 3];
 };
 
 

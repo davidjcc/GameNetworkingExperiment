@@ -12,11 +12,12 @@
 
 static ServerState* serverState = nullptr;
 static std::shared_ptr<spdlog::logger> logger;
+static std::vector<std::string> connectedClients;
 
-Client GetClientFromPeer(ENetPeer& peer) {
-	for (Client& client : serverState->connectedClients) {
+std::string GetClientFromPeer(ENetPeer& peer) {
+	for (std::string& client : connectedClients) {
 		std::string name = GenerateClientName(&peer);
-		if (client.name == name) {
+		if (client == name) {
 			return client;
 		}
 	}
@@ -24,9 +25,9 @@ Client GetClientFromPeer(ENetPeer& peer) {
 	return CreateClientFromPeer(&peer);
 }
 
-Client& GetConnectedClient(const std::string& name) {
-	for (Client& client : serverState->connectedClients) {
-		if (client.name == name) {
+std::string GetConnectedClient(const std::string& name) {
+	for (std::string client : connectedClients) {
+		if (client == name) {
 			return client;
 		}
 	}
@@ -35,23 +36,17 @@ Client& GetConnectedClient(const std::string& name) {
 	exit(EXIT_FAILURE);
 }
 
-void RespondToClient(const Message& message, ENetHost& server, ENetEvent& event) {
-	std::string response = nlohmann::json(message).dump();
-
-	ENetPacket* responsePacket = enet_packet_create(response.c_str(),
-		response.size(),
-		ENET_PACKET_FLAG_RELIABLE);
-
-	enet_peer_send(event.peer, 0, responsePacket);
+void RespondToClient(const Packet& packet, ENetHost& server, ENetEvent& event) {
+	enet_peer_send(event.peer, 0, enet_packet_create(&packet, sizeof(Packet), ENET_PACKET_FLAG_RELIABLE));
 	//enet_packet_destroy(event.packet);
 }
 
-void AddClientToLobby(Client& client, size_t id) {
+void AddClientToLobby(const std::string& client, size_t id) {
 	for (auto& lobby : serverState->lobbies) {
 		if (lobby.id == id) {
 			for (auto& slot : lobby.clients) {
-				if (slot == nullptr) {
-					slot = &client;
+				if (slot.empty()) {
+					slot = client;
 				}
 			}
 		}
@@ -80,45 +75,42 @@ void RemoveLobby(const std::string& name) {
 	}
 }
 
-void ProcessMessage(ENetHost& server, ENetEvent& event, const Message& message) {
-	logger->info("Parsing message: Type: '{}' Data: {}",
-		MessageTypeString[message.type], message.data);
+void ProcessMessage(ENetHost& server, ENetEvent& event, Packet& packet) {
+	logger->info("Parsing packet: Type: '{}' Data: {}",
+		PacketTypeToString(packet.type), packet.data);
 
-	switch (message.type) {
-	case MessageType_Ping: RespondToClient({ MessageType_Pong, "Pong!" }, server, event); break;
-	case MessageType_ListLobbies: {
-		Message response = {
-			.type = MessageType_ListLobbies,
-			.data = serverState->ToJsonString(),
-			.clientId = GetClientFromPeer(*event.peer).name,
-		};
-		RespondToClient(response, server, event);
-	} break;
-
-	case MessageType_CreateLobby: {
-		Lobby lobby;
-		lobby.FromJson(nlohmann::json::parse(message.data));
-
-		lobby = AddLobby(lobby.name);
-
-		RespondToClient({ message.type, lobby.ToJsonString() }, server, event);
-	} break;
-
-	case MessageType_JoinLobby: {
-		size_t id = std::stoi(message.data);
-
-		const auto client = GetClientFromPeer(*event.peer);
-
-		AddClientToLobby(GetConnectedClient(client.name), id);
-
-		// Respond with a list lobbies message to update the client's state.
-		// TODO(DC): Rename list lobbies message type to update server state or something.
-		ProcessMessage(server, event, { MessageType_ListLobbies });
-	} break;
-	default: logger->error("Unknown message recieved ({} - {}), exiting", message.type, message.data); break;
+	// Update the packet for the return trip.
+	auto json = ServerStateToJson(*serverState).dump();
+	if (json.size() > sizeof(packet.state)) {
+		logger->error("Server state is too large to fit in packet, exiting.");
+		exit(EXIT_FAILURE);
 	}
+	strcpy(packet.state, json.c_str());
+	packet.clientId = GetClientFromPeer(*event.peer);
 
-	//enet_packet_destroy(event.packet);
+	switch (packet.type) {
+	case PACKET_TYPE_PING: {
+		packet.type = PACKET_TYPE_PONG;
+		packet.data = "Pong!";
+		RespondToClient(packet, server, event);
+	} break;
+
+	case PACKET_TYPE_CREATE_LOBBY: {
+		AddLobby(packet.data);
+		RespondToClient(packet, server, event);
+	} break;
+
+	case PACKET_TYPE_JOIN_LOBBY: {
+		size_t id = std::stoi(packet.data);
+		const auto client = GetClientFromPeer(*event.peer);
+		AddClientToLobby(GetConnectedClient(client), id);
+		RespondToClient(packet, server, event);
+	} break;
+
+	default: {
+		logger->error("Unknown packet recieved ({} - {}), exiting", PacketTypeToString(packet.type), packet.data);
+	} break;
+	}
 }
 
 static ENetHost* server;
@@ -141,32 +133,34 @@ void ServerThread() {
 		while (enet_host_service(server, &event, 1000) > 0) {
 			switch (event.type) {
 			case ENET_EVENT_TYPE_CONNECT: {
-				Client client = CreateClientFromPeer(event.peer);
+				auto client = CreateClientFromPeer(event.peer);
 
-				logger->info("Adding client {} to connected clients.", client.name);
-				serverState->connectedClients.push_back(client);
-
-				RespondToClient({ MessageType_ClientReceiveName, client.name }, *server, event);
+				logger->info("Adding client {} to connected clients.", client);
+				connectedClients.push_back(client);
+				RespondToClient({ PACKET_TYPE_CLIENT_RECEIVE_NAME, client }, *server, event);
 			} break;
 
 			case ENET_EVENT_TYPE_RECEIVE: {
 				std::string packetStr((char*)event.packet->data, event.packet->dataLength);
 				logger->info("A packet of length {} containing '{}' was received from {} on channel {}.",
-					event.packet->dataLength,
-					packetStr,
-					event.peer->data,
-					event.channelID);
+					event.packet->dataLength, packetStr, event.peer->data, event.channelID);
 
-				Message message = ParseMessage((char*)event.packet->data, event.packet->dataLength);
-				ProcessMessage(*server, event, message);
+				if (event.packet->dataLength == sizeof(Packet)) {
+					Packet packet = *(Packet*)event.packet->data;
+					ProcessMessage(*server, event, packet);
+				}
+				else {
+					logger->error("Error parsing packet, packet size is not equal to sizeof(Message).");
+				}
+
+				enet_packet_destroy(event.packet);
 			} break;
 
 			case ENET_EVENT_TYPE_DISCONNECT: {
-				logger->info("Disconnecting client {} from connected clients.", GetClientFromPeer(*event.peer).name);
-				auto& connectedClients = serverState->connectedClients;
+				logger->info("Disconnecting client {} from connected clients.", GetClientFromPeer(*event.peer));
 				connectedClients.erase(std::remove_if(connectedClients.begin(), connectedClients.end(),
-					[&](const Client& client) {
-						return client.name == std::to_string(event.peer->address.host);
+					[&](const std::string& client) {
+						return client == std::to_string(event.peer->address.host);
 					}), connectedClients.end());
 			} break;
 
@@ -202,6 +196,7 @@ int main() {
 		CommandType_Help,
 		CommandType_AddLobby,
 		CommandType_RemoveLobby,
+		CommandType_RemoveAllLobbies,
 	};
 
 	struct Command {
@@ -215,13 +210,8 @@ int main() {
 		{"help", {CommandType_Help, "Display all available commands"}},
 		{"lobby_add", {CommandType_AddLobby, "Add a new lobby"}},
 		{"lobby_remove", {CommandType_RemoveLobby, "Remove a lobby"}},
+		{"lobby_clear", {CommandType_RemoveAllLobbies, "Remove all lobbies"}},
 	};
-
-
-	AddLobby("test1");
-	AddLobby("test2");
-	AddLobby("test3");
-	AddLobby("test5");
 
 	std::string commandInput;
 	while (!killServer) {
@@ -237,7 +227,7 @@ int main() {
 		switch (command) {
 		case CommandType_Exit: killServer = true; break;
 		case CommandType_State: {
-			fmt::print("{}\n", serverState->ToJsonString(2));
+			// TODO(DC): Print out the current server state.
 		} break;
 
 		case CommandType_Help: {
@@ -255,12 +245,18 @@ int main() {
 		} break;
 
 		case CommandType_RemoveLobby: {
-				std::string lobbyName;
-				fmt::print("Enter a lobby name: ");
-				std::getline(std::cin, lobbyName);
+			std::string lobbyName;
+			fmt::print("Enter a lobby name: ");
+			std::getline(std::cin, lobbyName);
 
-				RemoveLobby(lobbyName);
-			} break;
+			RemoveLobby(lobbyName);
+		} break;
+
+		case CommandType_RemoveAllLobbies: {
+			for (auto& lobby : serverState->lobbies)
+				RemoveLobby(lobby.name);
+		} break;
+
 
 		default: {
 			fmt::print("Unknown command: {}\n", commandInput);

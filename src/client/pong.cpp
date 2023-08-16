@@ -27,14 +27,40 @@ namespace fs = std::filesystem;
 #define NUM_PLAYERS 2
 
 #define UPDATE_TIMER(TIMER) if (TIMER > 0.0f) {TIMER -= GetFrameTime();} else { TIMER = 0.0f; }
+#define RESET_TIMER(TIMER) TIMER = RESET_TIME;
 
 #define RESET_TIME 2.0f
 
 static std::string s_assetsDir = "assets";
+static uint32_t latency = 0;
+static ServerState serverState{};
 
 static int GetRandomDirection() {
 	return GetRandomValue(0, 100) > 50 ? -1 : 1;
 }
+
+struct Player {
+	float x, y, width, height;
+	bool isAi = false;
+	float score;
+};
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(Player, x, y, width, height, isAi, score);
+
+struct Ball {
+	float x, y, width, height;
+	float velX, velY;
+	float speed;
+};
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(Ball, x, y, width, height, velX, velY, speed);
+
+struct State {
+	Player left;
+	Player right;
+	Ball ball = {};
+	float resetTimer = 0.0f;
+	bool isDemo = false;
+};
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(State, left, right, ball, resetTimer);
 
 void ResetBall(State& state) {
 	state.ball.x = WINDOW_WIDTH / 2 - BALL_SIZE / 2;
@@ -376,8 +402,9 @@ int main(int argc, char* argv[])
 		return EXIT_FAILURE;
 	}
 
-	ServerState serverState{};
-	Net::Request::ListLobbies();
+
+	float pingTimer = 0.0f;
+	RESET_TIMER(pingTimer, 5.0f);
 
 	bool running = true;
 	while (running)
@@ -385,6 +412,15 @@ int main(int argc, char* argv[])
 		if (WindowShouldClose()) {
 			running = false;
 		}
+		UPDATE_TIMER(pingTimer);
+
+		if (pingTimer <= 0.0f) {
+			// Get the current time in milliseconds.
+			const uint32_t timestamp = (uint32_t)(GetTime() * 1000.0f);
+			Net::Request::Ping(timestamp);
+			RESET_TIMER(pingTimer, 5.0f);
+		}
+
 		BeginDrawing();
 		{
 			ClearBackground(BLACK);
@@ -395,20 +431,29 @@ int main(int argc, char* argv[])
 				DrawText(TextFormat("%i", state.right.score), WINDOW_WIDTH - 100, WINDOW_HEIGHT - 50, 50, colour);
 			}
 
-			if (Message message = Net::PollServer(); message.type != MessageType_None) {
-				switch (message.type) {
-				case MessageType_Ping: {
+			Net::PollServer([](const Packet& packet) {
+				serverState = JsonToServerState(packet.state);
+
+				switch (packet.type) {
+				case PACKET_TYPE_PING: {
 				} break;
 
-				case MessageType_ListLobbies: {
-					serverState.FromJson(nlohmann::json::parse(message.data));
+				case PACKET_TYPE_PONG: {
+					float current = GetTime();
+					auto currentMs = (uint32_t)(current * 1000.0f);
+					latency = currentMs - packet.timestampMs;
+				} break;
+
+				case PACKET_TYPE_CLIENT_RECEIVE_NAME: {
+					// Do nothing as the client handle's this.
 				} break;
 
 				default:
-					fmt::print("Unknown message type: {}\n", MessageTypeString[message.type]);
+					fmt::print("Unknown message type: {}\n", PacketTypeToString(packet.type));
 					break;
 				}
-			}
+
+				});
 
 			Update(state);
 			Draw(state);
@@ -417,14 +462,14 @@ int main(int argc, char* argv[])
 			{
 				ImGui::Begin("Multi-player");
 				ImGui::Text("Server status: %s", Net::IsConnected() ? "Connected" : "Disconnected");
+				ImGui::Text("%s", fmt::format("Ping: {}ms", latency).c_str());
+				if (ImGui::Button("Ping")) {
+					Net::Request::Ping((uint32_t)(GetTime() * 1000.0f));
+				}
 
 				if (Net::IsConnected()) {
 					ImGui::Text("Client name: %s", Net::GetClientName().c_str());
 					if (ImGui::CollapsingHeader("Lobbies", ImGuiTreeNodeFlags_DefaultOpen)) {
-						if (ImGui::Button("Update")) {
-							Net::Request::ListLobbies();
-						}
-
 						static char lobbyName[64];
 						ImGui::Text("Enter Lobby Name: "); ImGui::SameLine();
 						ImGui::SetNextItemWidth(100.0f);
@@ -441,9 +486,9 @@ int main(int argc, char* argv[])
 
 								int ctr = 0;
 								for (auto& client : lobby.clients) {
-									ImGui::Text("Client: %s", client ? client->name.c_str() : "(empty)");
+									ImGui::Text("Client: %s", client.empty() ? client.c_str() : "(empty)");
 
-									if (client == nullptr) {
+									if (client.empty()) {
 										ImGui::SameLine();
 										if (ImGui::Button(fmt::format("Join##{}", ctr++).c_str())) {
 											Net::Request::JoinLobby(lobby.id);
@@ -457,12 +502,6 @@ int main(int argc, char* argv[])
 							ImGui::Text("No lobbies");
 						}
 					}
-				}
-
-				if (ImGui::Begin("Server state")) {
-					std::string json = serverState.ToJsonString(2);
-					ImGui::Text(json.c_str());
-					ImGui::End();
 				}
 
 				ImGui::End();

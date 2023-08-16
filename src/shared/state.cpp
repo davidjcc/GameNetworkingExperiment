@@ -16,12 +16,6 @@ static const char* ANIMAL_NAMES[] = {
 	"Iguana", "Hummingbird", "Barracuda", "Falcon", "Manta Ray", "Mongoose", "Duck"
 };
 
-
-Message ParseMessage(const char* data, size_t dataLength) {
-	std::string dataString(data, dataLength);
-	return nlohmann::json::parse(dataString);
-}
-
 std::string GenerateClientName(void* peer) {
 	// Create a unique identifier for the peer using its IP address and port
 	size_t identifier = ((ENetPeer*)peer)->address.host * 2654435761u + ((ENetPeer*)peer)->address.port;
@@ -31,12 +25,8 @@ std::string GenerateClientName(void* peer) {
 	return ANIMAL_NAMES[index];
 }
 
-Client CreateClientFromPeer(void* peer) {
-	Client client;
-	client.status = ClientStatus_Connected;
-	client.name = GenerateClientName(peer);
-
-	return client;
+std::string CreateClientFromPeer(void* peer) {
+	return GenerateClientName(peer);
 }
 
 
