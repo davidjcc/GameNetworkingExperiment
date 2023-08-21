@@ -12,6 +12,7 @@ static ENetHost* client;
 static ENetPeer* peer;
 static int eventStatus;
 static bool connected = false;
+static int32_t lobbyID = -1;
 
 static std::string clientName;
 
@@ -20,6 +21,8 @@ namespace Net {
 	bool IsConnected() { return connected; }
 
 	std::string GetClientName() { return clientName; }
+	int32_t GetLobbyID() { return lobbyID; }
+	bool IsInLobby() { return lobbyID != -1; }
 
 	bool InitClient() {
 		if (enet_initialize() != 0) {
@@ -73,7 +76,11 @@ namespace Net {
 							clientName = packet->data;
 						} break;
 
-						case PACKET_TYPE_PONG:
+						case PACKET_TYPE_CLIENT_JOINED_LOBBY: {
+							nlohmann::json json = nlohmann::json::parse(packet->data);
+							lobbyID = json["lobby"];
+						} break;
+
 						default: break;
 						}
 
@@ -135,18 +142,56 @@ namespace Net {
 		}
 
 		void CreateLobby(const std::string& name) {
+			Packet packet = {};
+			packet.type = PACKET_TYPE_CREATE_LOBBY;
+			strcpy_s(packet.data, sizeof(packet.data), name.c_str());
+
+			SEND_REQUEST(packet);
+		}
+
+		void GetState() {
 			Packet packet = {
-				.type = PACKET_TYPE_CREATE_LOBBY,
-				.data = name,
+				.type = PACKET_TYPE_GET_STATE,
+				.data = "",
 			};
 			SEND_REQUEST(packet);
 		}
 
-		void JoinLobby(const size_t id) {
-			Packet packet = {
-				.type = PACKET_TYPE_JOIN_LOBBY,
-				.data = std::to_string(id),
+		void JoinLobby(const lobby_id id) {
+			Packet packet = {};
+			packet.type = PACKET_TYPE_JOIN_LOBBY;
+			sprintf_s(packet.data, sizeof(packet.data), "%d", id);
+
+			SEND_REQUEST(packet);
+		}
+
+		void UpdateLobby() {
+			Packet packet = {};
+			packet.type = PACKET_TYPE_CLIENT_UPDATE_LOBBY;
+			SEND_REQUEST(packet);
+		}
+
+		void PlayerMoved(const float x, const float y) {
+			Packet packet = {};
+			packet.type = PACKET_TYPE_PLAYER_MOVED;
+
+			nlohmann::json json = {
+				{"x", x},
+				{"y", y}
 			};
+			strcpy_s(packet.data, sizeof(packet.data), json.dump().c_str());
+
+			SEND_REQUEST(packet);
+
+		}
+
+		void SetReady(const bool ready) {
+			Packet packet = {};
+			packet.type = PACKET_TYPE_SET_READY;
+
+			std::string data = fmt::format("{}", ready);
+			strcpy_s(packet.data, sizeof(packet.data), data.c_str());
+
 			SEND_REQUEST(packet);
 		}
 	}

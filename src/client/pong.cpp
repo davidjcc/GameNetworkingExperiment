@@ -16,8 +16,8 @@ namespace fs = std::filesystem;
 #include "assets.h"
 #include "client.h"
 
-#define WINDOW_WIDTH 800
-#define WINDOW_HEIGHT 450
+#define WINDOW_WIDTH 1000
+#define WINDOW_HEIGHT WINDOW_WIDTH / 16 * 9
 #define PLAYER_WIDTH 20.0f
 #define PLAYER_HEIGHT 100.0f
 #define PLAYER_SPEED 0.05f
@@ -27,9 +27,9 @@ namespace fs = std::filesystem;
 #define NUM_PLAYERS 2
 
 #define UPDATE_TIMER(TIMER) if (TIMER > 0.0f) {TIMER -= GetFrameTime();} else { TIMER = 0.0f; }
-#define RESET_TIMER(TIMER) TIMER = RESET_TIME;
+#define RESET_TIMER(TIMER, RESET_TIME) TIMER = RESET_TIME;
 
-#define RESET_TIME 2.0f
+#define DEFAULT_RESET_TIME 2.0f
 
 static std::string s_assetsDir = "assets";
 static uint32_t latency = 0;
@@ -58,7 +58,6 @@ struct State {
 	Player right;
 	Ball ball = {};
 	float resetTimer = 0.0f;
-	bool isDemo = false;
 };
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(State, left, right, ball, resetTimer);
 
@@ -73,7 +72,7 @@ void ResetBall(State& state) {
 	state.ball.speed = INITIAL_BALL_SPEED;
 }
 
-void Init(State& state, bool resetScores = false, bool leftAi = false, bool rightAi = true, bool isDemo = false) {
+void Init(State& state, bool resetScores = false, bool leftAi = false, bool rightAi = true) {
 	float playerInitialY = (float)WINDOW_HEIGHT * .5f - PLAYER_HEIGHT * .5f;
 	float xBuffer = 10.0f;
 
@@ -88,7 +87,6 @@ void Init(State& state, bool resetScores = false, bool leftAi = false, bool righ
 		state.right.score = 0.0f;
 	}
 
-	state.isDemo = isDemo;
 	ResetBall(state);
 	LoadAssets(s_assetsDir);
 }
@@ -98,16 +96,11 @@ bool IsRectOutOfBounds(const Rectangle& rect) {
 }
 
 Color GetColour(const State& state) {
-	auto colour = Color{ 255, 255, 255, 255 };
-	if (state.isDemo) {
-		colour.a = 100;
-	}
-
-	return colour;
+	return WHITE;
 }
 
 void DrawCentreLine(const State& state) {
-	if (state.resetTimer <= 0.0f && !state.isDemo) {
+	if (state.resetTimer <= 0.0f) {
 		float width = 10.0f;
 		float height = 30.0f;
 		for (float y = 0.0f; y < WINDOW_HEIGHT; y += (height + 5.0f)) {
@@ -149,23 +142,17 @@ void Update(State& state) {
 	// Check right paddle win.
 	if (state.ball.x < 0) {
 		state.right.score++;
-		state.resetTimer = RESET_TIME;
+		state.resetTimer = DEFAULT_RESET_TIME;
 		ResetBall(state);
-
-		if (!state.isDemo) {
-			PlaySound(LoseSound);
-		}
+		PlaySound(LoseSound);
 	}
 
 	// Check left paddle win.
 	if (state.ball.x - BALL_SIZE > WINDOW_WIDTH) {
-		state.resetTimer = RESET_TIME;
+		state.resetTimer = DEFAULT_RESET_TIME;
 		state.left.score++;
 		ResetBall(state);
-
-		if (!state.isDemo) {
-			PlaySound(WinSound);
-		}
+		PlaySound(WinSound);
 	}
 
 	// Ball-Player collision
@@ -177,10 +164,7 @@ void Update(State& state) {
 			state.ball.velX *= -1.0f;
 			state.ball.velY = (float)GetRandomDirection();
 
-			// Don't increase the ball speed if in demo mode.
-			if (!state.isDemo) {
-				state.ball.speed += BALL_SPEED_INCREASE_PER_HIT;
-			}
+			state.ball.speed += BALL_SPEED_INCREASE_PER_HIT;
 		}
 
 		// Handle any AI players.
@@ -220,161 +204,136 @@ void Update(State& state) {
 		}
 	}
 
-	if (!state.isDemo) {
-		// Player input
-		if (IsKeyDown(KEY_UP)) {
-			if (!IsRectOutOfBounds(rect(state.left))) {
-				state.left.y -= PLAYER_SPEED;
-			}
-			else {
-				state.left.y = 1;
-			}
-		}
-		else if (IsKeyDown(KEY_DOWN)) {
-			if (!IsRectOutOfBounds(rect(state.left))) {
-				state.left.y += PLAYER_SPEED;
-			}
-			else {
-				state.left.y = WINDOW_HEIGHT - PLAYER_HEIGHT - 1;
-			}
-		}
-	}
-}
-
-enum GameState {
-	GameState_Menu = 0,
-	GameState_PlayingSinglePlayer,
-
-	GameState_MenuMultiPlayer,
-	GameState_PlayingMultiPlayer,
-
-	GameState_CreateGameInput,
-
-	GameState_JoinGame,
-};
-
-bool IsInPlayingState(const GameState& state) {
-	switch (state) {
-	case GameState_Menu:
-	case GameState_PlayingSinglePlayer:
-	case GameState_CreateGameInput:
-	case GameState_JoinGame:
-		return true;
-
-	default:
-		return false;
-
-	}
-}
-
-static char CreateGameLobbyName[128];
-static char JoinGameServerAddress[128];
-
-static void DrawServerStatus(GameState& gameState) {
-	if (!IsInPlayingState(gameState)) {
-		DrawText("Server status: ", 10, WINDOW_HEIGHT - 20, 20, WHITE);
-
-		std::string status = Net::IsConnected() ? "Connected" : "Disconnected";
-		if (Net::IsConnected()) {
-			float xPos = 10 + MeasureText("Server status: ", 20);
-			DrawText(status.c_str(), xPos, WINDOW_HEIGHT - 20, 20, GREEN);
-
-			std::string clientName = fmt::format("Client Name: {}", Net::GetClientName());
-			xPos += MeasureText(clientName.c_str(), 20);
-			DrawText(clientName.c_str(), xPos, WINDOW_HEIGHT - 20, 20, WHITE);
+	// Player input
+	if (IsKeyDown(KEY_UP)) {
+		if (!IsRectOutOfBounds(rect(state.left))) {
+			state.left.y -= PLAYER_SPEED;
 		}
 		else {
-			DrawText(status.c_str(), 10 + MeasureText("Server status: ", 20), WINDOW_HEIGHT - 20, 20, RED);
+			state.left.y = 1;
+		}
+	}
+	else if (IsKeyDown(KEY_DOWN)) {
+		if (!IsRectOutOfBounds(rect(state.left))) {
+			state.left.y += PLAYER_SPEED;
+		}
+		else {
+			state.left.y = WINDOW_HEIGHT - PLAYER_HEIGHT - 1;
 		}
 	}
 }
 
-static void DrawMenu(GameState& gameState, State& state) {
-	DrawServerStatus(gameState);
+static Lobby lobby{};
+std::array<std::string, MAX_CLIENTS_PER_LOBBY> clientNames{};
+bool isInGame = false;
 
-	switch (gameState) {
-	case GameState_Menu: {
-		DrawText("PONG", ((WINDOW_WIDTH / 2) - MeasureText("PONG", 50) / 2), 10, 50, WHITE);
-
-		float yCursor = 100.0f;
-		float buttonW = 200.0f;
-		float buttonH = 50.0f;
-
-#if 0
-		if (GuiButton(Rectangle{ WINDOW_WIDTH / 2 - buttonW / 2.0f, yCursor, buttonW, buttonH }, "Single Player")) {
-			gameState = GameState_PlayingSinglePlayer;
-			Init(state, true, false, true, false);
-			state.resetTimer = RESET_TIME;
-		}
-
-		yCursor += buttonH + 10;
-		if (GuiButton(Rectangle{ WINDOW_WIDTH / 2 - 100, yCursor, buttonW, buttonH }, "Multi-Player")) {
-			gameState = GameState_MenuMultiPlayer;
-		}
-
-		yCursor += buttonH + 10;
-		if (GuiButton(Rectangle{ WINDOW_WIDTH / 2 - 100, yCursor, buttonW, buttonH }, "Test Client Ping")) {
-			Net::Request::Ping();
-		}
-#endif
-
-	} break;
-
-	case GameState_MenuMultiPlayer: {
-		DrawText("MULTIPLAYER", ((WINDOW_WIDTH / 2) - MeasureText("MULTIPLAYER", 50) / 2), 10, 50, WHITE);
-#if 0
-		if (GuiButton(Rectangle{ WINDOW_WIDTH - 100, 10, 50, 50 }, "CLOSE")) {
-			gameState = GameState_Menu;
-		}
-#endif
-
-		float yCursor = 100.0f;
-		float buttonW = 200.0f;
-		float buttonH = 50.0f;
-
-#if 0
-		if (GuiButton(Rectangle{ WINDOW_WIDTH / 2 - buttonW / 2.0f, yCursor, buttonW, buttonH }, "Create Game")) {
-			gameState = GameState_CreateGameInput;
-		}
-
-		yCursor += buttonH + 10;
-		if (GuiButton(Rectangle{ WINDOW_WIDTH / 2 - 100, yCursor, buttonW, buttonH }, "Join Game")) {
-			gameState = GameState_JoinGame;
-
-		}
-#endif
-	} break;
-
-	case GameState_CreateGameInput: {
-		DrawText("CREATE GAME", ((WINDOW_WIDTH / 2) - MeasureText("CREATE GAME", 50) / 2), 10, 50, WHITE);
-
-#if 0
-		int result = GuiTextInputBox(Rectangle{ WINDOW_WIDTH / 2 - 120, WINDOW_HEIGHT / 2 - 60, 240, 140 }, "", "Enter the Lobby name", "Ok;Cancel", CreateGameLobbyName, 128, NULL);
-		if (result == 1) {
-			// Transition to new online game.
-		}
-		else if (result > 1) {
-			strcpy_s(CreateGameLobbyName, sizeof(CreateGameLobbyName), "\0");
-			gameState = GameState_MenuMultiPlayer;
-		}
-#endif
-	} break;
-
-	case GameState_JoinGame: {
-		DrawText("JOIN GAME", ((WINDOW_WIDTH / 2) - MeasureText("JOIN GAME", 50) / 2), 10, 50, WHITE);
-
-#if 0
-		int result = GuiTextInputBox(Rectangle{ WINDOW_WIDTH / 2 - 120, WINDOW_HEIGHT / 2 - 60, 240, 140 }, "", "Enter the server address", "Ok;Cancel", JoinGameServerAddress, 128, NULL);
-		if (result == 1) {
-			// Transition to joined game.
-		}
-		else if (result > 1) {
-			strcpy_s(JoinGameServerAddress, sizeof(JoinGameServerAddress), "\0");
-			gameState = GameState_MenuMultiPlayer;
-		}
-#endif
-	} break;
+static void DrawUI() {
+	if (isInGame) {
+		return;
 	}
+
+	rlImGuiBegin();
+	{
+		ImGui::Begin("Multi-player");
+		ImGui::Text("%s", fmt::format("Frame time: {}s", GetFrameTime()).c_str());
+		ImGui::Text("Server status: %s", Net::IsConnected() ? "Connected" : "Disconnected");
+		ImGui::Text("%s", fmt::format("Ping: {}ms", latency).c_str());
+		if (ImGui::Button("Ping")) {
+			Net::Request::Ping((uint32_t)(GetTime() * 1000.0f));
+		}
+
+		if (Net::IsConnected()) {
+			if (ImGui::Button("Refresh")) {
+				Net::Request::GetState();
+			}
+			ImGui::Text("Client name: %s", Net::GetClientName().c_str());
+			if (ImGui::CollapsingHeader("Lobbies", ImGuiTreeNodeFlags_DefaultOpen)) {
+				if (!Net::IsInLobby()) {
+					static char lobbyName[64];
+					ImGui::Text("Enter Lobby Name: "); ImGui::SameLine();
+					ImGui::SetNextItemWidth(100.0f);
+					ImGui::InputText("##LOBBY_NAME", lobbyName, 64);
+					if (ImGui::Button("Create")) {
+						Net::Request::CreateLobby(lobbyName);
+						memset(lobbyName, 0, sizeof(lobbyName));
+					}
+
+					if (serverState.activeLobbies > 0) {
+						for (auto& lobby : serverState.lobbies) {
+							ImGui::Text("ID: %i", lobby.id);
+							ImGui::Text("Name: %s", lobby.name.c_str());
+
+							int ctr = 0;
+							for (size_t i = 0; i < lobby.clients.size(); ++i) {
+								auto& client = lobby.clients[i];
+
+								ImGui::Text("%s", fmt::format("Client: {}", client == CLIENT_STATE_EMPTY ? "(empty)" : clientNames[i]).c_str());
+
+								if (client == CLIENT_STATE_EMPTY) {
+									ImGui::SameLine();
+									if (ImGui::Button(fmt::format("Join##{}", ctr++).c_str())) {
+										Net::Request::JoinLobby(lobby.id);
+									}
+								}
+							}
+							ImGui::Text("");
+						}
+					}
+					else {
+						ImGui::Text("No lobbies");
+					}
+				}
+				else {
+					static bool ready = false;
+					ImGui::Text("In lobby: %i", Net::GetLobbyID());
+
+					if (ImGui::Checkbox("Ready", &ready)) {
+						Net::Request::SetReady(ready);
+					}
+				}
+			}
+		}
+
+		ImGui::End();
+	}
+	rlImGuiEnd();
+
+}
+
+static std::array<ClientState, MAX_CLIENTS_PER_LOBBY> clients;
+void DrawGame() {
+	for (auto& client : clients) {
+		// Draw self and other players.
+		if (client.status == CLIENT_STATUS_IN_GAME || client.name.empty()) {
+			DrawRectangle((int32_t)client.x, (int32_t)client.y, 50, 50, RED);
+		}
+
+		// Handle local player input.
+		if (client.isLocal) {
+			Vector2 velocity = { 0.0f, 0.0f };
+			float speed = 100.0f;
+			if (IsKeyDown(KEY_W)) {
+				velocity.y = -speed * GetFrameTime();
+			}
+			else if (IsKeyDown(KEY_S)) {
+				velocity.y = speed * GetFrameTime();
+			}
+			else if (IsKeyDown(KEY_A)) {
+				velocity.x = -speed * GetFrameTime();
+			}
+			else if (IsKeyDown(KEY_D)) {
+				velocity.x = speed * GetFrameTime();
+			}
+
+			client.x += velocity.x;
+			client.y += velocity.y;
+
+			if ((velocity.x != 0.0f) || velocity.y != 0.0f) {
+				Net::Request::PlayerMoved(client.x, client.y);
+			}
+		}
+	}
+
 }
 
 int main(int argc, char* argv[])
@@ -388,24 +347,21 @@ int main(int argc, char* argv[])
 	State state{};
 
 	SetRandomSeed((unsigned int)time(NULL));
-
 	InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Pong");
-
-	GameState gameState = GameState_Menu;
-
-	//GuiLoadStyleDefault();
 	rlImGuiSetup(true);
 
-	Init(state, true, true, true, true);
+	Init(state, true, false, true);
 	if (!Net::InitClient()) {
 		spdlog::error("Error initialising Net::Client.");
 		return EXIT_FAILURE;
 	}
 
+	Vector2 pos = { 10.0f, 10.0f };
 
-	float pingTimer = 0.0f;
-	RESET_TIMER(pingTimer, 5.0f);
 
+	float pingTimer = 5.0f;
+	float lobbyUpdateTimer = 5.0f;
+	bool showUI = false;
 	bool running = true;
 	while (running)
 	{
@@ -413,6 +369,14 @@ int main(int argc, char* argv[])
 			running = false;
 		}
 		UPDATE_TIMER(pingTimer);
+		if (!isInGame && Net::IsInLobby()) {
+			UPDATE_TIMER(lobbyUpdateTimer);
+
+			if (lobbyUpdateTimer <= 0.0f) {
+				Net::Request::UpdateLobby();
+				RESET_TIMER(lobbyUpdateTimer, 5.0f);
+			}
+		}
 
 		if (pingTimer <= 0.0f) {
 			// Get the current time in milliseconds.
@@ -425,106 +389,97 @@ int main(int argc, char* argv[])
 		{
 			ClearBackground(BLACK);
 
-			auto colour = GetColour(state);
-			if (!state.isDemo) {
-				DrawText(TextFormat("%i", state.left.score), 100, WINDOW_HEIGHT - 50, 50, colour);
-				DrawText(TextFormat("%i", state.right.score), WINDOW_WIDTH - 100, WINDOW_HEIGHT - 50, 50, colour);
-			}
-
 			Net::PollServer([](const Packet& packet) {
-				serverState = JsonToServerState(packet.state);
+				// TODO(DC): It might be possible to get an error packet back and
+				// we still to process it but for now to cover all bases just assert
+				// if it isn't a success.
+				//assert(packet.processedState == PACKET_STATE_SUCCESS);
 
 				switch (packet.type) {
-				case PACKET_TYPE_PING: {
+				case PACKET_TYPE_GET_STATE: {
+					serverState = JsonToServerState(packet.data);
 				} break;
+				case PACKET_TYPE_PING:
 
 				case PACKET_TYPE_PONG: {
-					float current = GetTime();
+					float current = (float)GetTime();
 					auto currentMs = (uint32_t)(current * 1000.0f);
 					latency = currentMs - packet.timestampMs;
 				} break;
 
-				case PACKET_TYPE_CLIENT_RECEIVE_NAME: {
-					// Do nothing as the client handle's this.
+				case PACKET_TYPE_CLIENT_UPDATE_LOBBY: {
+					if (strlen(packet.data) > 0) {
+						nlohmann::json json = nlohmann::json::parse(packet.data);
+						from_json(json, lobby);
+					}
 				} break;
+
+				case PACKET_TYPE_CLIENT_JOINED_LOBBY: {
+					auto json = nlohmann::json(nlohmann::json::parse(packet.data));
+
+					client_id clientId = json["client"].get<client_id>();
+					auto clientName = json["clientName"].get<std::string>();
+					lobby_id lobbyId = json["lobby"].get<lobby_id>();
+					int32_t slot = json["slot"].get<int32_t>();
+
+					clientNames[slot] = clientName;
+
+					spdlog::info("Player {} has joined lobby {}", clientId, lobbyId);
+				} break;
+
+				case PACKET_TYPE_SET_READY: {
+					nlohmann::json json = nlohmann::json::parse(packet.data);
+					size_t idx = json["lobbyIdx"];
+					clients[idx].isLocal = true;
+				} break;
+
+				case PACKET_TYPE_GAME_START: {
+					isInGame = true;
+					nlohmann::json json = nlohmann::json::parse(packet.data);
+					for (size_t i = 0; i < clients.size(); ++i) {
+						clients[i].x = json[i]["x"];
+						clients[i].y = json[i]["y"];
+					}
+
+				} break;
+
+				case PACKET_TYPE_PLAYER_MOVED: {
+					if (!isInGame) {
+						spdlog::error("Received a player move packet but we're not currently in a game");
+						assert(isInGame);
+					}
+
+					for (auto& client : clients) {
+						if (client.isLocal) {
+							continue;
+						}
+
+						nlohmann::json json = nlohmann::json::parse(packet.data);
+						client.x = json["x"];
+						client.y = json["y"];
+					}
+				}
+
+											 // Net::Client handle's these.
+				case PACKET_TYPE_CLIENT_RECEIVE_NAME:
+				case PACKET_TYPE_JOIN_LOBBY:
+					break;
 
 				default:
 					fmt::print("Unknown message type: {}\n", PacketTypeToString(packet.type));
 					break;
 				}
-
 				});
 
-			Update(state);
-			Draw(state);
+			DrawGame();
 
-			rlImGuiBegin();
-			{
-				ImGui::Begin("Multi-player");
-				ImGui::Text("Server status: %s", Net::IsConnected() ? "Connected" : "Disconnected");
-				ImGui::Text("%s", fmt::format("Ping: {}ms", latency).c_str());
-				if (ImGui::Button("Ping")) {
-					Net::Request::Ping((uint32_t)(GetTime() * 1000.0f));
-				}
-
-				if (Net::IsConnected()) {
-					ImGui::Text("Client name: %s", Net::GetClientName().c_str());
-					if (ImGui::CollapsingHeader("Lobbies", ImGuiTreeNodeFlags_DefaultOpen)) {
-						static char lobbyName[64];
-						ImGui::Text("Enter Lobby Name: "); ImGui::SameLine();
-						ImGui::SetNextItemWidth(100.0f);
-						ImGui::InputText("##LOBBY_NAME", lobbyName, 64);
-						if (ImGui::Button("Create")) {
-							Net::Request::CreateLobby(lobbyName);
-							memset(lobbyName, 0, sizeof(lobbyName));
-						}
-
-						if (serverState.activeLobbies > 0) {
-							for (auto& lobby : serverState.lobbies) {
-								ImGui::Text("ID: %i", lobby.id);
-								ImGui::Text("Name: %s", lobby.name.c_str());
-
-								int ctr = 0;
-								for (auto& client : lobby.clients) {
-									ImGui::Text("Client: %s", client.empty() ? client.c_str() : "(empty)");
-
-									if (client.empty()) {
-										ImGui::SameLine();
-										if (ImGui::Button(fmt::format("Join##{}", ctr++).c_str())) {
-											Net::Request::JoinLobby(lobby.id);
-										}
-									}
-								}
-								ImGui::Text("");
-							}
-						}
-						else {
-							ImGui::Text("No lobbies");
-						}
-					}
-				}
-
-				ImGui::End();
-			}
-			rlImGuiEnd();
-
-
-			DrawMenu(gameState, state);
-
-			if (IsKeyPressed(KEY_R)) {
-				state.resetTimer = RESET_TIME;
-				Init(state, true, false, true, false);
+			if (showUI) {
+				DrawUI();
 			}
 
-			if (state.resetTimer > 0.0f) {
-				char buf[10];
-				sprintf_s(buf, "%.01f", state.resetTimer);
-				DrawText(buf, ((WINDOW_WIDTH / 2) - MeasureText(buf, 50) / 2), 10, 50, WHITE);
-
-				const char* help = "Press Up and Down arrows to move Paddle";
-				DrawText(help, ((WINDOW_WIDTH / 2) - MeasureText(help, 30) / 2), 50, 30, WHITE);
+			if (IsKeyPressed(KEY_F1)) {
+				showUI = !showUI;
 			}
-
 		}
 		EndDrawing();
 	}
