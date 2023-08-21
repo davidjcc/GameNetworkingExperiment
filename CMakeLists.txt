@@ -9,7 +9,6 @@ include(cmake/CPM.cmake)
 CPMAddPackage("gh:fmtlib/fmt#10.0.0")
 CPMAddPackage("gh:nlohmann/json@3.11.2")
 
-
 CPMAddPackage(
     NAME spdlog
     GITHUB_REPOSITORY gabime/spdlog
@@ -22,7 +21,34 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 
 add_definitions(-D _CRT_SECURE_NO_WARNINGS)
 
-add_subdirectory(src/client)
-add_subdirectory(src/server)
+set(SERVER_SOURCES
+	src/server.cpp
+	src/client.cpp
+
+	src/main.cpp
+)
+
+set(ENET_DIR ${CMAKE_SOURCE_DIR}/libs/enet)
+set(ENET_SOURCES
+	${ENET_DIR}/callbacks.c
+	${ENET_DIR}/host.c
+	${ENET_DIR}/list.c
+	${ENET_DIR}/packet.c
+	${ENET_DIR}/peer.c
+	${ENET_DIR}/protocol.c
+	${ENET_DIR}/unix.c
+	${ENET_DIR}/win32.c
+)
+
+add_executable(server ${SERVER_SOURCES} ${ENET_SOURCES})
+
+target_include_directories(server PRIVATE 
+	${ENET_DIR}/include
+	${nlohmann_json_SOURCE_DIR}/single_include
+	${CMAKE_SOURCE_DIR}/src
+)
+
+target_link_libraries(server PRIVATE fmt Ws2_32 winmm spdlog)
+
 
 

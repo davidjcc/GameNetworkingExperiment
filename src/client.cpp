@@ -1,7 +1,4 @@
-#include "state.h"
-
-#include <fmt/format.h>
-#include <enet/enet.h>
+#include "client.h"
 
 static const char* ANIMAL_NAMES[] = {
 	"Elephant", "Dolphin", "Lion", "Tiger", "Bear", "Wolf", "Giraffe", "Kangaroo", "Penguin", "Whale",
@@ -16,17 +13,22 @@ static const char* ANIMAL_NAMES[] = {
 	"Iguana", "Hummingbird", "Barracuda", "Falcon", "Manta Ray", "Mongoose", "Duck"
 };
 
-std::string GenerateClientName(void* peer) {
+static std::string generate_client_name(const ENetPeer& peer) {
 	// Create a unique identifier for the peer using its IP address and port
-	size_t identifier = ((ENetPeer*)peer)->address.host * 2654435761u + ((ENetPeer*)peer)->address.port;
+	size_t identifier = (peer.address.host * 2654435761u + (peer.address.port));
 
 	// Use the identifier to generate an index into the names array
-	int index = identifier % ARRAY_COUNT(ANIMAL_NAMES);
+	size_t index = identifier % std::size(ANIMAL_NAMES);
 	return ANIMAL_NAMES[index];
 }
 
-std::string CreateClientFromPeer(void* peer) {
-	return GenerateClientName(peer);
+client_ptr Game_Client_Manager::add_client(const ENetPeer& peer) {
+	client_ptr result = std::make_shared<Game_Client>(peer, generate_client_name(peer), m_clients.size());
+	m_clients.push_back(result);
+	return result;
 }
 
-
+void Game_Client_Manager::disconnect_client(const client_id id) {
+	if (id < m_clients.size())
+		m_clients[id]->disconnect();
+}
