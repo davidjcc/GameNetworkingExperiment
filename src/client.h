@@ -8,50 +8,95 @@
 #include <string>
 #include <memory>
 
+#include "utils.h"
+#include "event.h"
+
 using game_server_callback_t = void(*)(ENetEvent& event);
 
-enum Game_Client_State {
-	GAME_CLIENT_STATE_NONE = 0,
-	GAME_CLIENT_STATE_CONNECTED,
-	GAME_CLIENT_STATE_DISCONNECTED,
-};
 
 using client_id = size_t;
 
 
 class Game_Client {
 public:
-	Game_Client(ENetPeer* peer, const std::string name, const client_id slot)
-		: m_peer(peer), m_name(name), m_slot(slot) {}
+	NO_COPY_NO_MOVE(Game_Client);
+
+	enum State {
+		NONE = 0,
+		CONNECTED,
+		DISCONNECTED,
+	};
+
+	Game_Client(const std::string& name, const client_id slot);
 
 	const std::string& name() const { return m_name; }
 	const size_t slot() const { return m_slot; }
+	const std::string& get_name() const { return m_name; }
+	const State& get_state() const { return m_state; }
 
 	void connect() {
-		m_state = GAME_CLIENT_STATE_CONNECTED;
+		m_state = CONNECTED;
 	}
 
 	void disconnect() {
-		m_state = GAME_CLIENT_STATE_DISCONNECTED;
+		m_state = DISCONNECTED;
 	}
 
 private:
-	Game_Client_State m_state = GAME_CLIENT_STATE_NONE;
+	State m_state = NONE;
 
 	std::string m_name;
 	client_id m_slot;
+};
+
+class Internal_Client : public Game_Client {
+public:
+	NO_COPY_NO_MOVE(Internal_Client);
+
+	Internal_Client(ENetPeer* peer, const client_id slot);
+
+	ENetPeer* get_peer() const { return m_peer; }
+
+private:
 	ENetPeer* m_peer = nullptr;
 };
 
-using client_ptr = std::shared_ptr<Game_Client>;
+class Host_Client : public Game_Client {
+public:
+	NO_COPY_NO_MOVE(Host_Client);
+
+	using poll_callback = void(*)(Host_Client*, Event*);
+
+	Host_Client();
+	~Host_Client();
+
+	void on_connect(Event& event);
+	void on_disconnect(Event& event);
+
+	ENetHost* get_host() const { return m_client; }
+	void poll(poll_callback cb);
+
+private:
+	ENetHost* m_client = nullptr;
+	int32_t m_port;
+};
+
+using client_ptr = std::shared_ptr<Internal_Client>;
 
 class Game_Client_Manager {
 public:
+	NO_COPY_NO_MOVE(Game_Client_Manager);
+
 	Game_Client_Manager(std::shared_ptr<spdlog::logger>& logger)
 		: m_logger(logger) {}
 
-	client_ptr add_client(const ENetPeer& peer);
-	void disconnect_client(const client_id id);
+	client_ptr add_client(ENetPeer& peer);
+
+	client_ptr get_client(const client_id slot) {
+		return m_clients[slot];
+	}
+
+	client_ptr get_client_from_event(Event& event);
 
 private:
 	std::vector<client_ptr> m_clients;

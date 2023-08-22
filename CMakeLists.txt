@@ -22,10 +22,10 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 add_definitions(-D _CRT_SECURE_NO_WARNINGS)
 
 set(SERVER_SOURCES
+	src/enet.cpp
 	src/server.cpp
 	src/client.cpp
-
-	src/main.cpp
+	src/event.cpp
 )
 
 set(ENET_DIR ${CMAKE_SOURCE_DIR}/libs/enet)
@@ -40,7 +40,8 @@ set(ENET_SOURCES
 	${ENET_DIR}/win32.c
 )
 
-add_executable(server ${SERVER_SOURCES} ${ENET_SOURCES})
+add_executable(server src/main.cpp ${SERVER_SOURCES} ${ENET_SOURCES})
+add_executable(test_client src/test_client.cpp ${SERVER_SOURCES} ${ENET_SOURCES})
 
 target_include_directories(server PRIVATE 
 	${ENET_DIR}/include
@@ -48,7 +49,13 @@ target_include_directories(server PRIVATE
 	${CMAKE_SOURCE_DIR}/src
 )
 
+target_include_directories(test_client PRIVATE 
+	${ENET_DIR}/include
+	${nlohmann_json_SOURCE_DIR}/single_include
+	${CMAKE_SOURCE_DIR}/src
+)
 target_link_libraries(server PRIVATE fmt Ws2_32 winmm spdlog)
+target_link_libraries(test_client PRIVATE fmt Ws2_32 winmm spdlog)
 
 
 

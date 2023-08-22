@@ -22,13 +22,72 @@ static std::string generate_client_name(const ENetPeer& peer) {
 	return ANIMAL_NAMES[index];
 }
 
-client_ptr Game_Client_Manager::add_client(const ENetPeer& peer) {
-	client_ptr result = std::make_shared<Game_Client>(peer, generate_client_name(peer), m_clients.size());
+Game_Client::Game_Client(const std::string& name, const client_id slot)
+	: m_name(name), m_slot(slot) {}
+
+client_ptr Game_Client_Manager::add_client(ENetPeer& peer) {
+	const auto client_name = generate_client_name(peer);
+
+	auto result = std::make_shared<Internal_Client>(&peer, m_clients.size());
 	m_clients.push_back(result);
-	return result;
+	return m_clients[m_clients.size() - 1];
 }
 
-void Game_Client_Manager::disconnect_client(const client_id id) {
-	if (id < m_clients.size())
-		m_clients[id]->disconnect();
+Internal_Client::Internal_Client(ENetPeer* peer, client_id slot)
+	: m_peer(peer), Game_Client(generate_client_name(*peer), slot)
+{
+}
+
+Host_Client::Host_Client()
+	: Game_Client("", -1) {
+	m_client = enet_host_create(NULL, 1, 2, 0);
+
+	if (!m_client) {
+		PANIC("An error occurred while trying to create an Host client");
+	}
+}
+
+Host_Client::~Host_Client() {
+	enet_host_destroy(m_client);
+}
+
+void Host_Client::on_connect(Event& event) {
+	auto data = event.get_string();
+	int a = 0;
+}
+
+void Host_Client::on_disconnect(Event& event) {
+}
+
+void Host_Client::poll(poll_callback cb) {
+	ENetEvent enet_event{};
+	while (enet_host_service(m_client, &enet_event, 1000) > 0) {
+		Event event(enet_event);
+
+		switch (event.get_type()) {
+		case Event::CONNECT: {
+			on_connect(event);
+		} break;
+
+		case Event::DISCONNECT: {
+			on_disconnect(event);
+		} break;
+
+		case Event::EVENT_RECEIVED: {
+			cb(this, &event);
+		} break;
+		}
+	}
+}
+
+client_ptr Game_Client_Manager::get_client_from_event(Event& event) {
+	const auto identifier = generate_client_name(*event.get_peer());
+
+	for (auto& client : m_clients) {
+		if (client->get_name() == identifier) {
+			return client;
+		}
+	}
+
+	return nullptr;
 }
