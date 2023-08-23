@@ -17,14 +17,14 @@ public:
 
 	using poll_callback = void(*)(Game_Server* server, Game_Client* client, Event* event);
 
-	Game_Server(const char* host, int32_t port, int32_t max_clients, std::shared_ptr<spdlog::logger>& logger);
+	Game_Server(const char* host, int32_t port, int32_t max_clients, logger_t& logger);
 	~Game_Server();
 
-	void set_logger(std::shared_ptr<spdlog::logger>& logger) {
+	void set_logger(logger_t& logger) {
 		m_logger = logger;
 	}
 
-	std::shared_ptr<spdlog::logger>& get_logger() {
+	logger_t& get_logger() {
 		return m_logger;
 	}
 
@@ -39,7 +39,7 @@ private:
 
 	ENetHost* m_server = nullptr;
 	ENetAddress m_address{};
-	std::shared_ptr<spdlog::logger> m_logger;
+	logger_t m_logger;
 
 	const char* m_host;
 	int32_t m_port = 0;

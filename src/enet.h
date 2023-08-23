@@ -9,10 +9,8 @@ class ENet {
 public:
 	NO_COPY_NO_MOVE(ENet);
 
-	ENet(std::shared_ptr<spdlog::logger>& logger);
+	ENet(logger_t& logger);
 	~ENet();
-
-	void init();
 
 	Game_Server* create_server(const char* host, int port, int max_clients);
 	void destroy_server(Game_Server* server);
@@ -26,6 +24,6 @@ private:
 		STATE_INITIALISED
 	} m_state = STATE_UNINITIALISED;
 
-	std::shared_ptr<spdlog::logger> m_logger;
+	logger_t m_logger;
 };
 

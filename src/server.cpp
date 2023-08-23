@@ -12,7 +12,7 @@
 #include "utils.h"
 #include "event.h"
 
-Game_Server::Game_Server(const char* host, int32_t port, int32_t max_clients, std::shared_ptr<spdlog::logger>& logger)
+Game_Server::Game_Server(const char* host, int32_t port, int32_t max_clients, logger_t& logger)
 	: m_host(host), m_port(port), m_max_clients(max_clients), m_logger(logger), m_client_manager(logger)
 {
 }

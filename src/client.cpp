@@ -23,24 +23,24 @@ static std::string generate_client_name(const ENetPeer& peer) {
 	return ANIMAL_NAMES[index];
 }
 
-Game_Client::Game_Client(const std::string& name, const client_id slot)
-	: m_name(name), m_slot(slot) {}
+Game_Client::Game_Client(const std::string& name, const client_id slot, logger_t& logger)
+	: m_logger(logger), m_name(name), m_slot(slot) {}
 
 client_ptr Game_Client_Manager::add_client(ENetPeer& peer) {
 	const auto client_name = generate_client_name(peer);
 
-	auto result = std::make_shared<Internal_Client>(&peer, m_clients.size());
+	auto result = std::make_shared<Internal_Client>(&peer, m_clients.size(), m_logger);
 	m_clients.push_back(result);
 	return m_clients[m_clients.size() - 1];
 }
 
-Internal_Client::Internal_Client(ENetPeer* peer, client_id slot)
-	: m_peer(peer), Game_Client(generate_client_name(*peer), slot)
+Internal_Client::Internal_Client(ENetPeer* peer, const client_id slot, logger_t logger)
+	: m_peer(peer), Game_Client(generate_client_name(*peer), slot, logger)
 {
 }
 
-Host_Client::Host_Client()
-	: Game_Client("", -1) 
+Host_Client::Host_Client(logger_t& logger)
+	: Game_Client("", -1, logger) 
 {
 	m_client = enet_host_create(NULL, 1, 2, 0);
 

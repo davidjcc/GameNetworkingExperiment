@@ -1,6 +1,7 @@
 #pragma once
 
 #include <fmt/format.h>
+#include <spdlog/spdlog.h>
 #include <cassert>
 
 #define ASSERT_PANIC(COND, FMT, ...) \
@@ -15,3 +16,5 @@
 	CLASS& operator=(CLASS&&) = delete;
 
 #define SAFE_DELETE(PTR) if ((PTR != nullptr)) { delete PTR; PTR = nullptr; }
+
+using logger_t = std::shared_ptr<spdlog::logger>;

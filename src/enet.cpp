@@ -1,15 +1,7 @@
 #include "enet.h"
 
-ENet::ENet(std::shared_ptr<spdlog::logger>& logger) : m_logger(logger)
-{ }
-
-ENet::~ENet() {
-	if (m_state == STATE_INITIALISED) {
-		enet_deinitialize();
-	}
-}
-
-void ENet::init() {
+ENet::ENet(logger_t& logger) : m_logger(logger)
+{
 	m_logger->info("Initialising ENet");
 
 	ASSERT_PANIC(m_state == STATE_UNINITIALISED, "Trying to initialise the ENet object when it is already initialised.");
@@ -20,6 +12,12 @@ void ENet::init() {
 
 	m_logger->info("ENet initialised");
 	m_state = STATE_INITIALISED;
+}
+
+ENet::~ENet() {
+	if (m_state == STATE_INITIALISED) {
+		enet_deinitialize();
+	}
 }
 
 Game_Server* ENet::create_server(const char* host, int port, int max_clients) {
@@ -40,7 +38,7 @@ void ENet::destroy_server(Game_Server* server) {
 }
 
 Host_Client* ENet::create_host_client() {
-	auto* result = new Host_Client();
+	auto* result = new Host_Client(m_logger);
 
 	if (result == nullptr) {
 		PANIC("Failed trying to create a new client");

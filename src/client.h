@@ -13,6 +13,7 @@
 
 using game_server_callback_t = void(*)(ENetEvent& event);
 
+
 using client_id = size_t;
 
 class Game_Client {
@@ -25,12 +26,13 @@ public:
 		DISCONNECTED,
 	};
 
-	Game_Client(const std::string& name, const client_id slot);
+	Game_Client(const std::string& name, const client_id slot, logger_t& logger);
 
 	const std::string& name() const { return m_name; }
 	const size_t slot() const { return m_slot; }
 	const std::string& get_name() const { return m_name; }
 	const State& get_state() const { return m_state; }
+	logger_t& get_logger() { return m_logger; }
 
 	void connect() {
 		m_state = CONNECTED;
@@ -45,13 +47,14 @@ private:
 
 	std::string m_name;
 	client_id m_slot;
+	logger_t m_logger;
 };
 
 class Internal_Client : public Game_Client {
 public:
 	NO_COPY_NO_MOVE(Internal_Client);
 
-	Internal_Client(ENetPeer* peer, const client_id slot);
+	Internal_Client(ENetPeer* peer, const client_id slot, logger_t logger);
 
 	ENetPeer* get_peer() const { return m_peer; }
 
@@ -65,7 +68,7 @@ public:
 
 	using poll_callback = void(*)(Host_Client*, Event*);
 
-	Host_Client();
+	Host_Client(logger_t& logger);
 	~Host_Client();
 
 	void on_connect(Event& event);
@@ -89,7 +92,7 @@ class Game_Client_Manager {
 public:
 	NO_COPY_NO_MOVE(Game_Client_Manager);
 
-	Game_Client_Manager(std::shared_ptr<spdlog::logger>& logger)
+	Game_Client_Manager(logger_t& logger)
 		: m_logger(logger) {}
 
 	client_ptr add_client(ENetPeer& peer);
@@ -103,6 +106,6 @@ public:
 private:
 	std::vector<client_ptr> m_clients;
 
-	std::shared_ptr<spdlog::logger> m_logger;
+	logger_t m_logger;
 };
 

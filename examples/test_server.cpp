@@ -9,11 +9,9 @@
 const char* host = "localhost";
 int32_t port = 1234;
 
-std::shared_ptr<spdlog::logger> logger;
 int main() {
-	logger = spdlog::stdout_color_mt("SERVER");
+	auto logger = spdlog::stdout_color_mt("SERVER");
 	ENet enet(logger);
-	enet.init();
 
 	Game_Server* server = nullptr;
 	bool running = true;
@@ -25,7 +23,7 @@ int main() {
 		server->poll([](Game_Server* sv, Game_Client* client, Event* ev) {
 			ASSERT_PANIC(client->get_state() == Game_Client::CONNECTED, "Client is not connected");
 
-			logger->info("Server receieved a packet");
+			client->get_logger()->info("Server receieved a packet");
 			});
 	}
 
