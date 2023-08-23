@@ -7,12 +7,12 @@
 #include <list>
 #include <string>
 #include <memory>
+#include <unordered_map>
 
 #include "utils.h"
 #include "event.h"
 
 using game_server_callback_t = void(*)(ENetEvent& event);
-
 
 using client_id = size_t;
 
@@ -26,11 +26,9 @@ public:
 		DISCONNECTED,
 	};
 
-	Game_Client(const std::string& name, const client_id slot, logger_t& logger);
+	Game_Client(const client_id slot, logger_t& logger);
 
-	const std::string& name() const { return m_name; }
-	const size_t slot() const { return m_slot; }
-	const std::string& get_name() const { return m_name; }
+	const size_t get_slot() const { return m_slot; }
 	const State& get_state() const { return m_state; }
 	logger_t& get_logger() { return m_logger; }
 
@@ -45,7 +43,6 @@ public:
 private:
 	State m_state = NONE;
 
-	std::string m_name;
 	client_id m_slot;
 	logger_t m_logger;
 };
@@ -87,25 +84,3 @@ private:
 };
 
 using client_ptr = std::shared_ptr<Internal_Client>;
-
-class Game_Client_Manager {
-public:
-	NO_COPY_NO_MOVE(Game_Client_Manager);
-
-	Game_Client_Manager(logger_t& logger)
-		: m_logger(logger) {}
-
-	client_ptr add_client(ENetPeer& peer);
-
-	client_ptr get_client(const client_id slot) {
-		return m_clients[slot];
-	}
-
-	client_ptr get_client_from_event(Event& event);
-
-private:
-	std::vector<client_ptr> m_clients;
-
-	logger_t m_logger;
-};
-

@@ -17,30 +17,18 @@ public:
 		EVENT_RECEIVED,
 	};
 
-	Event(const ENetEvent& event)
-		: m_peer(event.peer) {
-		if (event.packet && event.packet->dataLength > 0) {
-			m_bytes.assign(event.packet->data, event.packet->data + event.packet->dataLength);
-		}
-
-		switch (event.type) {
-		case ENET_EVENT_TYPE_NONE: m_type = NONE; break;
-		case ENET_EVENT_TYPE_CONNECT: m_type = CONNECT; break;
-		case ENET_EVENT_TYPE_DISCONNECT: m_type = DISCONNECT; break;
-		case ENET_EVENT_TYPE_RECEIVE: m_type = EVENT_RECEIVED; break;
-		default: UNREACHABLE(); break;
-		}
-	}
-
+	Event(const ENetEvent& event);
 	~Event();
 
 	ENetPeer* get_peer() const { return m_peer; }
 	Type get_type() const { return m_type; }
+	size_t get_client_id() const { return m_client_id; }
 
 	std::string get_string() const;
 	std::vector<uint8_t> get_bytes() const;
 
 private:
+	size_t m_client_id;
 	Type m_type = NONE;
 	ENetPeer* m_peer;
 	std::vector<uint8_t> m_bytes;

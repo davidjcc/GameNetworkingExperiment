@@ -6,6 +6,7 @@
 #include <list>
 #include <string>
 
+#include "client_manager.h"
 #include "client.h"
 #include "event.h"
 #include "utils.h"

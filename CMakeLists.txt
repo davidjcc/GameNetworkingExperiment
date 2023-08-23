@@ -25,6 +25,7 @@ set(SERVER_SOURCES
 	src/enet.cpp
 	src/server.cpp
 	src/client.cpp
+	src/client_manager.cpp
 	src/event.cpp
 )
 

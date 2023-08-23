@@ -34,13 +34,16 @@ void Game_Server::start() {
 
 void Game_Server::on_client_connect(Event& event) {
 	auto client = m_client_manager.add_client(*event.get_peer());
+
+	m_logger->info("Adding new client to client manager at slot: {}", client->get_slot());
 	ASSERT_PANIC(client != nullptr, "Error trying to add new client");
 	client->connect();
 }
 
 void Game_Server::on_client_disconnect(Event& event) {
-	auto client = m_client_manager.get_client_from_event(event);
-	ASSERT_PANIC(client != nullptr, "{}: Client not found", __FUNCTION__);
+	//auto client = m_client_manager.get_client_from_event(event);
+	//ASSERT_PANIC(client != nullptr, "{}: Client not found", __FUNCTION__);
+	TODO;
 }
 
 void Game_Server::poll(uint32_t timeout_ms, poll_callback cb) {
@@ -60,7 +63,8 @@ void Game_Server::poll(uint32_t timeout_ms, poll_callback cb) {
 		default: break;
 		}
 
-		auto client = m_client_manager.get_client_from_event(event);
+		auto client = m_client_manager.get_client(event.get_client_id());
+		ASSERT_PANIC(client, "Client with invalid ID {}", event.get_client_id());
 		cb(this, client.get(), &event);
 	}
 }
