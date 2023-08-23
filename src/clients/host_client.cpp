@@ -30,32 +30,32 @@ bool Host_Client::connect(const char* host, int32_t port) {
 	return true;
 }
 
-void Host_Client::on_connect(Event& event) {
-	auto data = event.get_string();
+void Host_Client::on_connect(Packet& packet) {
+	auto data = packet.get_string();
 	int a = 0;
 }
 
-void Host_Client::on_disconnect(Event& event) {
+void Host_Client::on_disconnect(Packet& packet) {
 }
 
 void Host_Client::poll(uint32_t timeout_ms, poll_callback cb) {
 	ENetEvent enet_event{};
 	while (enet_host_service(m_client, &enet_event, timeout_ms) > 0) {
-		Event event(enet_event);
+		Packet packet(enet_event);
 
-		switch (event.get_type()) {
-		case Event::CONNECT: {
-			cb(this, &event);
-			on_connect(event);
+		switch (packet.get_type()) {
+		case Packet::CONNECT: {
+			cb(this, &packet);
+			on_connect(packet);
 		} break;
 
-		case Event::DISCONNECT: {
-			cb(this, &event);
-			on_disconnect(event);
+		case Packet::DISCONNECT: {
+			cb(this, &packet);
+			on_disconnect(packet);
 		} break;
 
-		case Event::EVENT_RECEIVED: {
-			cb(this, &event);
+		case Packet::EVENT_RECEIVED: {
+			cb(this, &packet);
 		} break;
 		}
 	}

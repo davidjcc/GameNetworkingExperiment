@@ -5,19 +5,19 @@
 
 #include "clients/base.h"
 #include "utils.h"
-#include "event.h"
+#include "packet.h"
 
 class Host_Client : public Base_Client {
 public:
 	NO_COPY_NO_MOVE(Host_Client);
 
-	using poll_callback = void(*)(Host_Client*, Event*);
+	using poll_callback = void(*)(Host_Client*, Packet*);
 
 	Host_Client(logger_t& logger);
 	~Host_Client();
 
-	void on_connect(Event& event);
-	void on_disconnect(Event& event);
+	void on_connect(Packet& packet);
+	void on_disconnect(Packet& packet);
 
 	ENetHost* get_host() const { return m_client; }
 	void poll(uint32_t timeout, poll_callback cb);

@@ -10,7 +10,7 @@
 #include <list>
 
 #include "utils.h"
-#include "event.h"
+#include "packet.h"
 
 Game_Server::Game_Server(const char* host, int32_t port, int32_t max_clients, logger_t& logger)
 	: m_host(host), m_port(port), m_max_clients(max_clients), m_logger(logger), m_client_manager(logger)
@@ -32,15 +32,15 @@ void Game_Server::start() {
 	m_logger->info("Server now running on {}:{}", m_host, m_port);
 }
 
-void Game_Server::on_client_connect(Event& event) {
-	auto client = m_client_manager.add_client(*event.get_peer());
+void Game_Server::on_client_connect(Packet& packet) {
+	auto client = m_client_manager.add_client(*packet.get_peer());
 
 	m_logger->info("Adding new client to client manager at slot: {}", client->get_slot());
 	ASSERT_PANIC(client != nullptr, "Error trying to add new client");
 	client->connect();
 }
 
-void Game_Server::on_client_disconnect(Event& event) {
+void Game_Server::on_client_disconnect(Packet& packet) {
 	//auto client = m_client_manager.get_client_from_event(event);
 	//ASSERT_PANIC(client != nullptr, "{}: Client not found", __FUNCTION__);
 	TODO;
@@ -49,34 +49,35 @@ void Game_Server::on_client_disconnect(Event& event) {
 void Game_Server::poll(uint32_t timeout_ms, poll_callback cb) {
 	ENetEvent enet_event{};
 	while (enet_host_service(m_server, &enet_event, timeout_ms) > 0) {
-		Event event(enet_event);
+		Packet packet(enet_event);
 
-		switch (event.get_type()) {
-		case Event::CONNECT: {
-			on_client_connect(event);
+		switch (packet.get_type()) {
+		case Packet::CONNECT: {
+			on_client_connect(packet);
 		} break;
 
-		case Event::DISCONNECT: {
-			on_client_disconnect(event);
+		case Packet::DISCONNECT: {
+			on_client_disconnect(packet);
 		} break;
 
 		default: break;
 		}
 
-		auto client = m_client_manager.get_client(event.get_client_id());
-		ASSERT_PANIC(client, "Client with invalid ID {}", event.get_client_id());
-		cb(this, client.get(), &event);
+		auto client = m_client_manager.get_client(packet.get_client_id());
+		ASSERT_PANIC(client, "Client with invalid ID {}", packet.get_client_id());
+		cb(this, client.get(), &packet)
+			;
 	}
 }
 
-void Game_Server::broadcast_to_all(const Event& event, bool reliable) {
-	const auto bytes = event.get_bytes();
+void Game_Server::broadcast_to_all(const Packet& packet, bool reliable) {
+	const auto bytes = packet.get_bytes();
 
 	enet_uint32 flags = 0;
 	if (reliable) {
 		flags |= ENET_PACKET_FLAG_RELIABLE;
 	}
 
-	ENetPacket* packet = enet_packet_create(bytes.data(), bytes.size(), flags);
-	ASSERT_PANIC(packet != nullptr, "Error creating packet");
+	ENetPacket* enet_packet = enet_packet_create(bytes.data(), bytes.size(), flags);
+	ASSERT_PANIC(enet_packet != nullptr, "Error creating packet");
 }

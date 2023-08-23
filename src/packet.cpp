@@ -1,7 +1,7 @@
-#include "event.h"
+#include "packet.h"
 #include "utils.h"
 
-Event::Event(const ENetEvent& event)
+Packet::Packet(const ENetEvent& event)
 		: m_peer(event.peer) {
 		if (event.packet && event.packet->dataLength > 0) {
 			m_bytes.assign(event.packet->data, event.packet->data + event.packet->dataLength);
@@ -17,10 +17,10 @@ Event::Event(const ENetEvent& event)
 	}
 
 
-Event::~Event() {
+Packet::~Packet() {
 }
 
-std::string Event::get_string() const {
+std::string Packet::get_string() const {
 	std::string result = "";
 
 	if (!m_bytes.empty()) {
@@ -30,6 +30,6 @@ std::string Event::get_string() const {
 	return result;
 }
 
-std::vector<uint8_t> Event::get_bytes() const {
+std::vector<uint8_t> Packet::get_bytes() const {
 	return m_bytes;
 }

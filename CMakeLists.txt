@@ -26,7 +26,7 @@ set(SERVER_SOURCES
 	src/server.cpp
 	src/clients/host_client.cpp
 	src/clients/server_client_manager.cpp
-	src/event.cpp
+	"src/packet.cpp"
 )
 
 set(ENET_DIR ${CMAKE_SOURCE_DIR}/libs/enet)

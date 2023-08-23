@@ -8,7 +8,7 @@
 
 #include "clients/server_client_manager.h"
 #include "clients/base.h"
-#include "event.h"
+#include "packet.h"
 #include "utils.h"
 
 
@@ -16,7 +16,7 @@ class Game_Server {
 public:
 	NO_COPY_NO_MOVE(Game_Server);
 
-	using poll_callback = void(*)(Game_Server* server, Server_Client* client, Event* event);
+	using poll_callback = void(*)(Game_Server*, Server_Client*, Packet*);
 
 	Game_Server(const char* host, int32_t port, int32_t max_clients, logger_t& logger);
 	~Game_Server();
@@ -32,11 +32,11 @@ public:
 	void start();
 	void poll(uint32_t timeout_ms, poll_callback cb);
 
-	void broadcast_to_all(const Event& event, bool reliable);
+	void broadcast_to_all(const Packet& packet, bool reliable);
 
 private:
-	void on_client_connect(Event& event);
-	void on_client_disconnect(Event& event);
+	void on_client_connect(Packet& packet);
+	void on_client_disconnect(Packet& packet);
 
 	ENetHost* m_server = nullptr;
 	ENetAddress m_address{};

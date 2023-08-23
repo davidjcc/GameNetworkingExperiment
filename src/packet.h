@@ -6,9 +6,9 @@
 
 #include "utils.h"
 
-class Event {
+class Packet {
 public:
-	NO_COPY_NO_MOVE(Event);
+	NO_COPY_NO_MOVE(Packet);
 
 	enum Type {
 		NONE = 0,
@@ -17,8 +17,8 @@ public:
 		EVENT_RECEIVED,
 	};
 
-	Event(const ENetEvent& event);
-	~Event();
+	Packet(const ENetEvent& event);
+	~Packet();
 
 	ENetPeer* get_peer() const { return m_peer; }
 	Type get_type() const { return m_type; }

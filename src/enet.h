@@ -2,7 +2,7 @@
 
 #include "server.h"
 #include "clients/host_client.h"
-#include "event.h"
+#include "packet.h"
 #include "utils.h"
 
 class ENet {
