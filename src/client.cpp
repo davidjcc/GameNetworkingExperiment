@@ -77,9 +77,9 @@ void Host_Client::on_connect(Event& event) {
 void Host_Client::on_disconnect(Event& event) {
 }
 
-void Host_Client::poll(poll_callback cb) {
+void Host_Client::poll(uint32_t timeout_ms, poll_callback cb) {
 	ENetEvent enet_event{};
-	while (enet_host_service(m_client, &enet_event, 1000) > 0) {
+	while (enet_host_service(m_client, &enet_event, timeout_ms) > 0) {
 		Event event(enet_event);
 
 		switch (event.get_type()) {

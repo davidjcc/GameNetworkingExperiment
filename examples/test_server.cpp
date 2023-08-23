@@ -20,7 +20,7 @@ int main() {
 	server->start();
 
 	while (true) {
-		server->poll([](Game_Server* sv, Game_Client* client, Event* ev) {
+		server->poll(5000, [](Game_Server* sv, Game_Client* client, Event* ev) {
 			ASSERT_PANIC(client->get_state() == Game_Client::CONNECTED, "Client is not connected");
 
 			client->get_logger()->info("Server receieved a packet");

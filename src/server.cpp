@@ -43,9 +43,9 @@ void Game_Server::on_client_disconnect(Event& event) {
 	ASSERT_PANIC(client != nullptr, "{}: Client not found", __FUNCTION__);
 }
 
-void Game_Server::poll(poll_callback cb) {
+void Game_Server::poll(uint32_t timeout_ms, poll_callback cb) {
 	ENetEvent enet_event{};
-	while (enet_host_service(m_server, &enet_event, 1000) > 0) {
+	while (enet_host_service(m_server, &enet_event, timeout_ms) > 0) {
 		Event event(enet_event);
 
 		switch (event.get_type()) {
@@ -57,11 +57,11 @@ void Game_Server::poll(poll_callback cb) {
 			on_client_disconnect(event);
 		} break;
 
-		case Event::EVENT_RECEIVED: {
-			auto client = m_client_manager.get_client_from_event(event);
-			cb(this, client.get(), &event);
-		} break;
+		default: break;
 		}
+
+		auto client = m_client_manager.get_client_from_event(event);
+		cb(this, client.get(), &event);
 	}
 }
 

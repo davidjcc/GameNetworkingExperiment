@@ -75,7 +75,7 @@ public:
 	void on_disconnect(Event& event);
 
 	ENetHost* get_host() const { return m_client; }
-	void poll(poll_callback cb);
+	void poll(uint32_t timeout, poll_callback cb);
 
 	bool connect(const char* host, int32_t port);
 

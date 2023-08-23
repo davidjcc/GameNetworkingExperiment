@@ -29,7 +29,7 @@ public:
 	}
 
 	void start();
-	void poll(poll_callback cb);
+	void poll(uint32_t timeout_ms, poll_callback cb);
 
 	void broadcast_to_all(const Event& event, bool reliable);
 

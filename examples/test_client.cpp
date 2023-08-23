@@ -17,7 +17,7 @@ int main() {
 	ASSERT_PANIC(client->connect(host, port), "Error connecting client to server");
 
 	while (true) {
-		client->poll([](Host_Client* client, Event* event) {
+		client->poll(1000, [](Host_Client* client, Event* event) {
 			client->get_logger()->info("Client Packet received: {}");
 			});
 	}
