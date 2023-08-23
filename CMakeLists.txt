@@ -40,22 +40,15 @@ set(ENET_SOURCES
 	${ENET_DIR}/win32.c
 )
 
-add_executable(server src/main.cpp ${SERVER_SOURCES} ${ENET_SOURCES})
-add_executable(test_client src/test_client.cpp ${SERVER_SOURCES} ${ENET_SOURCES})
+function(add_test_project name entrypoint)
+	add_executable(${name} ${entrypoint} ${SERVER_SOURCES} ${ENET_SOURCES})
+	target_include_directories(${name} PRIVATE 
+		${ENET_DIR}/include
+		${nlohmann_json_SOURCE_DIR}/single_include
+		${CMAKE_SOURCE_DIR}/src
+	)
+	target_link_libraries(${name} PRIVATE fmt Ws2_32 winmm spdlog)
+endfunction()
 
-target_include_directories(server PRIVATE 
-	${ENET_DIR}/include
-	${nlohmann_json_SOURCE_DIR}/single_include
-	${CMAKE_SOURCE_DIR}/src
-)
-
-target_include_directories(test_client PRIVATE 
-	${ENET_DIR}/include
-	${nlohmann_json_SOURCE_DIR}/single_include
-	${CMAKE_SOURCE_DIR}/src
-)
-target_link_libraries(server PRIVATE fmt Ws2_32 winmm spdlog)
-target_link_libraries(test_client PRIVATE fmt Ws2_32 winmm spdlog)
-
-
-
+add_test_project(test_client examples/test_client.cpp)
+add_test_project(test_server examples/test_server.cpp)

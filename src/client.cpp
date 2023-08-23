@@ -1,4 +1,5 @@
 #include "client.h"
+#include "enet/enet.h"
 
 static const char* ANIMAL_NAMES[] = {
 	"Elephant", "Dolphin", "Lion", "Tiger", "Bear", "Wolf", "Giraffe", "Kangaroo", "Penguin", "Whale",
@@ -39,7 +40,8 @@ Internal_Client::Internal_Client(ENetPeer* peer, client_id slot)
 }
 
 Host_Client::Host_Client()
-	: Game_Client("", -1) {
+	: Game_Client("", -1) 
+{
 	m_client = enet_host_create(NULL, 1, 2, 0);
 
 	if (!m_client) {
@@ -49,6 +51,22 @@ Host_Client::Host_Client()
 
 Host_Client::~Host_Client() {
 	enet_host_destroy(m_client);
+}
+
+bool Host_Client::connect(const char* host, int32_t port) {
+	m_host = host;
+	m_port = port;
+
+	ENetAddress address;
+	enet_address_set_host(&address, m_host);
+	address.port = m_port;
+	m_server = enet_host_connect(m_client, &address, 2);
+	if (!m_server) {
+		PANIC("An error occurred while trying to create an Host peer");
+		return false;
+	}
+
+	return true;
 }
 
 void Host_Client::on_connect(Event& event) {
@@ -66,10 +84,12 @@ void Host_Client::poll(poll_callback cb) {
 
 		switch (event.get_type()) {
 		case Event::CONNECT: {
+			cb(this, &event);
 			on_connect(event);
 		} break;
 
 		case Event::DISCONNECT: {
+			cb(this, &event);
 			on_disconnect(event);
 		} break;
 

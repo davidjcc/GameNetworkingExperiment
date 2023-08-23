@@ -13,9 +13,7 @@
 
 using game_server_callback_t = void(*)(ENetEvent& event);
 
-
 using client_id = size_t;
-
 
 class Game_Client {
 public:
@@ -76,9 +74,13 @@ public:
 	ENetHost* get_host() const { return m_client; }
 	void poll(poll_callback cb);
 
+	bool connect(const char* host, int32_t port);
+
 private:
 	ENetHost* m_client = nullptr;
+	ENetPeer* m_server = nullptr;
 	int32_t m_port;
+	const char* m_host;
 };
 
 using client_ptr = std::shared_ptr<Internal_Client>;

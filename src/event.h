@@ -18,25 +18,30 @@ public:
 	};
 
 	Event(const ENetEvent& event)
-		: m_event(event) {}
+		: m_peer(event.peer) {
+		if (event.packet && event.packet->dataLength > 0) {
+			m_bytes.assign(event.packet->data, event.packet->data + event.packet->dataLength);
+		}
+
+		switch (event.type) {
+		case ENET_EVENT_TYPE_NONE: m_type = NONE; break;
+		case ENET_EVENT_TYPE_CONNECT: m_type = CONNECT; break;
+		case ENET_EVENT_TYPE_DISCONNECT: m_type = DISCONNECT; break;
+		case ENET_EVENT_TYPE_RECEIVE: m_type = EVENT_RECEIVED; break;
+		default: UNREACHABLE(); break;
+		}
+	}
 
 	~Event();
 
-	ENetPeer* get_peer() const { return m_event.peer; }
-	Type get_type();
+	ENetPeer* get_peer() const { return m_peer; }
+	Type get_type() const { return m_type; }
 
 	std::string get_string() const;
 	std::vector<uint8_t> get_bytes() const;
 
-	template <typename T>
-	T* to() {
-		ASSERT_PANIC(
-			sizeof(m_event.packet->dataLength) == sizeof(T),
-			"Trying to parse Type {} of size {} but data length is of size {}",
-			typeid(T), sizeof(T), m_event.packet->dataLength);
-		return *reinterpret_cast<T*>(m_event.packet->data);
-	}
-
 private:
-	ENetEvent m_event;
+	Type m_type = NONE;
+	ENetPeer* m_peer;
+	std::vector<uint8_t> m_bytes;
 };
