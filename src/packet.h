@@ -15,7 +15,7 @@ public:
 		NONE = 0,
 		CONNECT,
 		DISCONNECT,
-		EVENT_RECEIVED,
+		EVENT_RECIEVED,
 	};
 
 	Packet(const ENetEvent& event);

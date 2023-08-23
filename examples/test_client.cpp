@@ -31,7 +31,7 @@ int main() {
 				break;
 			}
 
-			case Packet::EVENT_RECEIVED: {
+			case Packet::EVENT_RECIEVED: {
 				break;
 			}
 			}

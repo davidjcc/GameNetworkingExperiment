@@ -11,7 +11,7 @@ Packet::Packet(const ENetEvent& event)
 		case ENET_EVENT_TYPE_NONE: m_type = NONE; break;
 		case ENET_EVENT_TYPE_CONNECT: m_type = CONNECT; break;
 		case ENET_EVENT_TYPE_DISCONNECT: m_type = DISCONNECT; break;
-		case ENET_EVENT_TYPE_RECEIVE: m_type = EVENT_RECEIVED; break;
+		case ENET_EVENT_TYPE_RECEIVE: m_type = EVENT_RECIEVED; break;
 		default: UNREACHABLE(); break;
 		}
 	}
