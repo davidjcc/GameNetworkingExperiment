@@ -1,17 +1,7 @@
-#include "client.h"
-#include "enet/enet.h"
-
-Game_Client::Game_Client(const client_id slot, logger_t& logger)
-	: m_logger(logger), m_slot(slot) {}
-
-
-Internal_Client::Internal_Client(ENetPeer* peer, const client_id slot, logger_t logger)
-	: m_peer(peer), Game_Client(slot, logger)
-{
-}
+#include "clients/host_client.h"
 
 Host_Client::Host_Client(logger_t& logger)
-	: Game_Client(-1, logger) 
+	: Base_Client(-1, logger) 
 {
 	m_client = enet_host_create(NULL, 1, 2, 0);
 

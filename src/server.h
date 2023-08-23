@@ -6,8 +6,8 @@
 #include <list>
 #include <string>
 
-#include "client_manager.h"
-#include "client.h"
+#include "clients/server_client_manager.h"
+#include "clients/base.h"
 #include "event.h"
 #include "utils.h"
 
@@ -16,7 +16,7 @@ class Game_Server {
 public:
 	NO_COPY_NO_MOVE(Game_Server);
 
-	using poll_callback = void(*)(Game_Server* server, Game_Client* client, Event* event);
+	using poll_callback = void(*)(Game_Server* server, Server_Client* client, Event* event);
 
 	Game_Server(const char* host, int32_t port, int32_t max_clients, logger_t& logger);
 	~Game_Server();
@@ -46,5 +46,5 @@ private:
 	int32_t m_port = 0;
 	int32_t m_max_clients = 0;
 
-	Game_Client_Manager m_client_manager;
+	Server_Client_Manager m_client_manager;
 };

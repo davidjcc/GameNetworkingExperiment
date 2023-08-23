@@ -47,7 +47,7 @@ Host_Client* ENet::create_host_client() {
 	return result;
 }
 
-void ENet::destroy_client(Game_Client* client) {
+void ENet::destroy_client(Host_Client* client) {
 	m_logger->info("Destroying client");
 	if (client) {
 		client->disconnect();

@@ -24,8 +24,8 @@ add_definitions(-D _CRT_SECURE_NO_WARNINGS)
 set(SERVER_SOURCES
 	src/enet.cpp
 	src/server.cpp
-	src/client.cpp
-	src/client_manager.cpp
+	src/clients/host_client.cpp
+	src/clients/server_client_manager.cpp
 	src/event.cpp
 )
 

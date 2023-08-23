@@ -1,7 +1,7 @@
 #pragma once
 
 #include "server.h"
-#include "client.h"
+#include "clients/host_client.h"
 #include "event.h"
 #include "utils.h"
 
@@ -16,7 +16,7 @@ public:
 	void destroy_server(Game_Server* server);
 
 	Host_Client* create_host_client();
-	void destroy_client(Game_Client* client);
+	void destroy_client(Host_Client* client);
 
 private:
 	enum State {
