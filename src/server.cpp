@@ -46,10 +46,11 @@ void Game_Server::on_client_disconnect(Packet& packet) {
 	TODO;
 }
 
-void Game_Server::poll(uint32_t timeout_ms, poll_callback cb) {
+void Game_Server::tick(uint32_t timeout_ms) {
 	ENetEvent enet_event{};
 	while (enet_host_service(m_server, &enet_event, timeout_ms) > 0) {
 		Packet packet(enet_event);
+		m_packets.push_front(packet);
 
 		switch (packet.get_type()) {
 		case Packet::CONNECT: {
@@ -62,11 +63,6 @@ void Game_Server::poll(uint32_t timeout_ms, poll_callback cb) {
 
 		default: break;
 		}
-
-		auto client = m_client_manager.get_client(packet.get_client_id());
-		ASSERT_PANIC(client, "Client with invalid ID {}", packet.get_client_id());
-		cb(this, client.get(), &packet)
-			;
 	}
 }
 

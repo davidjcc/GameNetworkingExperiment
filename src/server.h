@@ -16,8 +16,6 @@ class Game_Server {
 public:
 	NO_COPY_NO_MOVE(Game_Server);
 
-	using poll_callback = void(*)(Game_Server*, Server_Client*, Packet*);
-
 	Game_Server(const char* host, int32_t port, int32_t max_clients, logger_t& logger);
 	~Game_Server();
 
@@ -30,9 +28,11 @@ public:
 	}
 
 	void start();
-	void poll(uint32_t timeout_ms, poll_callback cb);
+	void tick(uint32_t timeout_ms);
 
 	void broadcast_to_all(const Packet& packet, bool reliable);
+
+	Ts_Packet_Queue& get_packets() { return m_packets; }
 
 private:
 	void on_client_connect(Packet& packet);
@@ -47,4 +47,6 @@ private:
 	int32_t m_max_clients = 0;
 
 	Server_Client_Manager m_client_manager;
+
+	Ts_Packet_Queue m_packets;
 };

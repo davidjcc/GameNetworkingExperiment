@@ -20,11 +20,24 @@ int main() {
 	server->start();
 
 	while (true) {
-		server->poll(5000, [](Game_Server* sv, Server_Client* client, Packet* packet) {
-			ASSERT_PANIC(client->get_state() == Server_Client::CONNECTED, "Client is not connected");
+		server->tick(5000);
+		auto& packets = server->get_packets();
+		while (!packets.empty()) {
+			auto packet = packets.pop_front();
+			switch (packet.get_type()) {
+			case Packet::CONNECT: {
+				break;
+			}
 
-			client->get_logger()->info("Server receieved a packet");
-			});
+			case Packet::DISCONNECT: {
+				break;
+			}
+
+			case Packet::EVENT_RECEIVED: {
+				break;
+			}
+			}
+		}
 	}
 
 	enet.destroy_server(server);

@@ -17,12 +17,27 @@ int main() {
 	ASSERT_PANIC(client->connect(host, port), "Error connecting client to server");
 
 	while (true) {
-		client->poll(1000, [](Host_Client* client, Packet* packet) {
-			client->get_logger()->info("Client Packet received: {}");
-			});
+		client->tick(1000);
+
+		auto packets = client->get_packets();
+		while (!packets.empty()) {
+			auto packet = packets.pop_front();
+			switch (packet.get_type()) {
+			case Packet::CONNECT: {
+				break;
+			}
+
+			case Packet::DISCONNECT: {
+				break;
+			}
+
+			case Packet::EVENT_RECEIVED: {
+				break;
+			}
+			}
+		}
+
+		enet.destroy_client(client);
+
+		return EXIT_SUCCESS;
 	}
-
-	enet.destroy_client(client);
-
-	return EXIT_SUCCESS;
-}

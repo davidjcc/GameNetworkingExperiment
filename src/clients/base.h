@@ -5,7 +5,6 @@
 #include <enet/enet.h>
 
 using client_id = size_t;
-using game_server_callback_t = void(*)(ENetEvent& event);
 
 class Base_Client {
 public:
@@ -32,7 +31,7 @@ public:
 		m_state = DISCONNECTED;
 	}
 
-private:
+protected:
 	State m_state = NONE;
 	client_id m_slot;
 	logger_t m_logger;
