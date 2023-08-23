@@ -1,6 +1,7 @@
 #pragma once
 #include "clients/server_client.h"
 #include "utils.h"
+#include "packet.h"
 
 #include <spdlog/logger.h>
 #include <enet/enet.h>
@@ -24,7 +25,14 @@ public:
 
 		return nullptr;
 	}
+
+	void broadcast_to_clients(const Packet& packet, bool reliable);
+	void broadcast_to_client(server_client_ptr& client, const Packet& packet, bool reliable);
+	void broadcast_to_client(client_id& id, const Packet& packet, bool reliable);
 private:
+	void send(server_client_ptr client, ENetPacket* packet);
+	ENetPacket* create_enet_packet(const Packet& packet, bool reliable);
+
 	std::unordered_map<client_id, server_client_ptr> m_clients;
 	logger_t m_logger;
 };

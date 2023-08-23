@@ -19,6 +19,8 @@ public:
 	};
 
 	Packet(const ENetEvent& event);
+	Packet(ENetPeer* event);
+	Packet() = default;
 	~Packet();
 
 	ENetPeer* get_peer() const { return m_peer; }
@@ -27,6 +29,10 @@ public:
 
 	std::string get_string() const;
 	std::vector<uint8_t> get_bytes() const;
+
+	void set_bytes(const std::vector<uint8_t>& data) { m_bytes = data; }
+	void set_string(const std::string& str) { m_bytes.assign(str.begin(), str.end()); }
+	void set_type(Type type) { m_type = type; }
 
 private:
 	size_t m_client_id;
@@ -38,7 +44,7 @@ private:
 struct Ts_Packet_Queue {
 public:
 	Ts_Packet_Queue() = default;
-	Ts_Packet_Queue(const Ts_Packet_Queue&) = delete;
+	NO_COPY_NO_MOVE(Ts_Packet_Queue);
 	virtual ~Ts_Packet_Queue() {
 		clear();
 	}

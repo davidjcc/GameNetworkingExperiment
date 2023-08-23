@@ -30,7 +30,7 @@ public:
 	void start();
 	void tick(uint32_t timeout_ms);
 
-	void broadcast_to_all(const Packet& packet, bool reliable);
+	void broadcast_to_clients(const Packet& packet, bool reliable);
 
 	Ts_Packet_Queue& get_packets() { return m_packets; }
 

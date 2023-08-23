@@ -66,14 +66,7 @@ void Game_Server::tick(uint32_t timeout_ms) {
 	}
 }
 
-void Game_Server::broadcast_to_all(const Packet& packet, bool reliable) {
-	const auto bytes = packet.get_bytes();
-
-	enet_uint32 flags = 0;
-	if (reliable) {
-		flags |= ENET_PACKET_FLAG_RELIABLE;
-	}
-
-	ENetPacket* enet_packet = enet_packet_create(bytes.data(), bytes.size(), flags);
-	ASSERT_PANIC(enet_packet != nullptr, "Error creating packet");
+void Game_Server::broadcast_to_clients(const Packet& packet, bool reliable) {
+	m_logger->trace("Broadcasting packet to clients: '{}'", packet.get_string());
+	m_client_manager.broadcast_to_clients(packet, reliable);
 }

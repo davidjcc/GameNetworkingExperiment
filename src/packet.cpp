@@ -1,20 +1,27 @@
 #include "packet.h"
 #include "utils.h"
 
-Packet::Packet(const ENetEvent& event)
-		: m_peer(event.peer) {
-		if (event.packet && event.packet->dataLength > 0) {
-			m_bytes.assign(event.packet->data, event.packet->data + event.packet->dataLength);
-		}
-
-		switch (event.type) {
-		case ENET_EVENT_TYPE_NONE: m_type = NONE; break;
-		case ENET_EVENT_TYPE_CONNECT: m_type = CONNECT; break;
-		case ENET_EVENT_TYPE_DISCONNECT: m_type = DISCONNECT; break;
-		case ENET_EVENT_TYPE_RECEIVE: m_type = EVENT_RECIEVED; break;
-		default: UNREACHABLE(); break;
-		}
+static Packet::Type get_type_from_enet_type(ENetEventType type) {
+	switch (type) {
+	case ENET_EVENT_TYPE_NONE: return Packet::NONE;
+	case ENET_EVENT_TYPE_CONNECT: return Packet::CONNECT; 
+	case ENET_EVENT_TYPE_DISCONNECT: return Packet::DISCONNECT; 
+	case ENET_EVENT_TYPE_RECEIVE: return Packet::EVENT_RECIEVED; 
+	default: UNREACHABLE(); break;
 	}
+}
+
+Packet::Packet(const ENetEvent& event)
+	: m_peer(event.peer) {
+	if (event.packet && event.packet->dataLength > 0) {
+		m_bytes.assign(event.packet->data, event.packet->data + event.packet->dataLength);
+	}
+	m_type = get_type_from_enet_type(event.type);
+}
+
+Packet::Packet(ENetPeer* peer)
+	: m_peer(peer) {
+}
 
 
 Packet::~Packet() {
