@@ -1,0 +1,32 @@
+
+namespace Game;
+
+enum MessageType:byte {
+	ClientConnected = 0,
+	ClientDisconnected,
+	ClientReady,
+}
+
+table ClientConnectedMessage {
+	type: MessageType = ClientConnected;
+	client_id: int;
+}
+
+table ClientReadyMessage {
+	type: MessageType = ClientReady;
+	client_id: int;
+}
+
+table ClientDisconnectedMessage {
+	type: MessageType = ClientConnected;
+	client_id: int;
+}
+
+union MessageUnion {
+	ClientConnectedMessage,
+	ClientDisconnectedMessage,
+	ClientReadyMessage,
+}
+
+
+

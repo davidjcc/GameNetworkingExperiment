@@ -1,13 +1,25 @@
 #include "clients/server_client_manager.h"
 #include "clients/server_client.h"
 
-server_client_ptr Server_Client_Manager::add_client(ENetPeer& peer) {
-	// TODO(DC): Generate better ids.
+server_client_ptr Server_Client_Manager::add_client(ENetPeer* peer) {
+	ASSERT_PANIC(peer != nullptr, "Trying to add client but the peer is NULL");
+
 	client_id id = m_clients.size();
 
-	m_clients.insert({ id, std::make_shared<Server_Client>(&peer, m_clients.size(), m_logger) });
+	auto inserted = m_clients.insert({ peer, std::make_shared<Server_Client>(peer, id, m_logger) });
 
-	return m_clients[id];
+	return m_clients[peer];
+}
+
+void Server_Client_Manager::remove_client(const ENetPeer* peer) {
+	for (auto& [id, client] : m_clients) {
+		if (id == peer) {
+			client->disconnect();
+			return;
+		}
+	}
+
+	UNREACHABLE();
 }
 
 ENetPacket* Server_Client_Manager::create_enet_packet(const Packet& packet, bool reliable) {
@@ -44,6 +56,6 @@ void Server_Client_Manager::broadcast_to_client(server_client_ptr& client, const
 
 void Server_Client_Manager::broadcast_to_client(client_id& id, const Packet& packet, bool reliable) {
 	ENetPacket* enet_packet = create_enet_packet(packet, reliable);
-	auto client = get_client(id);
+	auto client = get_client(packet.get_peer());
 	send(client, enet_packet);
 }

@@ -20,10 +20,13 @@ public:
 
 	Packet(const ENetEvent& event);
 	Packet(ENetPeer* event);
+	Packet(void* data, size_t data_length);
 	Packet() = default;
 	~Packet();
 
 	ENetPeer* get_peer() const { return m_peer; }
+	void set_peer(ENetPeer* peer) { m_peer = peer; }
+
 	Type get_type() const { return m_type; }
 	size_t get_client_id() const { return m_client_id; }
 
@@ -35,9 +38,9 @@ public:
 	void set_type(Type type) { m_type = type; }
 
 private:
-	size_t m_client_id;
+	int32_t m_client_id = -1;
 	Type m_type = NONE;
-	ENetPeer* m_peer;
+	ENetPeer* m_peer = nullptr;
 	std::vector<uint8_t> m_bytes;
 };
 

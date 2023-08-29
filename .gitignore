@@ -2,6 +2,7 @@ bin
 CMakeLists.txt.user
 CMakeCache.txt
 CMakeFiles
+CMakeSettings.json
 CMakeScripts
 Testing
 Makefile
@@ -12,3 +13,5 @@ CTestTestfile.cmake
 _deps
 .vs
 out
+.generated
+build

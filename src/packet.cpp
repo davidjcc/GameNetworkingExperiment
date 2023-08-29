@@ -4,11 +4,15 @@
 static Packet::Type get_type_from_enet_type(ENetEventType type) {
 	switch (type) {
 	case ENET_EVENT_TYPE_NONE: return Packet::NONE;
-	case ENET_EVENT_TYPE_CONNECT: return Packet::CONNECT; 
-	case ENET_EVENT_TYPE_DISCONNECT: return Packet::DISCONNECT; 
-	case ENET_EVENT_TYPE_RECEIVE: return Packet::EVENT_RECIEVED; 
+	case ENET_EVENT_TYPE_CONNECT: return Packet::CONNECT;
+	case ENET_EVENT_TYPE_DISCONNECT: return Packet::DISCONNECT;
+	case ENET_EVENT_TYPE_RECEIVE: return Packet::EVENT_RECIEVED;
 	default: UNREACHABLE(); break;
 	}
+}
+
+Packet::Packet(void* data, size_t data_length) {
+	m_bytes.assign(reinterpret_cast<uint8_t*>(data), reinterpret_cast<uint8_t*>(data) + data_length);
 }
 
 Packet::Packet(const ENetEvent& event)

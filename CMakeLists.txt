@@ -8,6 +8,7 @@ include(cmake/CPM.cmake)
 
 CPMAddPackage("gh:fmtlib/fmt#10.0.0")
 CPMAddPackage("gh:nlohmann/json@3.11.2")
+CPMAddPackage("gh:google/flatbuffers@23.5.26")
 
 CPMAddPackage(
     NAME spdlog
@@ -26,7 +27,8 @@ set(SERVER_SOURCES
 	src/server.cpp
 	src/clients/host_client.cpp
 	src/clients/server_client_manager.cpp
-	"src/packet.cpp"
+	src/packet.cpp
+	
 )
 
 set(ENET_DIR ${CMAKE_SOURCE_DIR}/libs/enet)
@@ -41,15 +43,31 @@ set(ENET_SOURCES
 	${ENET_DIR}/win32.c
 )
 
-function(add_test_project name entrypoint)
+set(FBS_FILES ${CMAKE_SOURCE_DIR}/src/messages/messages.fbs)
+set(GENERATED_OUTPUT_DIR ${CMAKE_SOURCE_DIR}/.generated)
+set(GENERATED_FILES ${GENERATED_OUTPUT_DIR}/messages_generated.h)
+
+add_custom_command(
+	OUTPUT ${GENERATED_FILES}
+	COMMAND ${CMAKE_SOURCE_DIR}/bin/flatc.exe --cpp -o ${GENERATED_OUTPUT_DIR} ${FBS_FILES}
+	DEPENDS flatc ${FBS_FILES}
+	COMMENT "Generating messages..."
+)
+add_custom_target(GenerateFlatBuffers DEPENDS ${GENERATED_FILES})
+
+function(bs_executable name entrypoint)
 	add_executable(${name} ${entrypoint} ${SERVER_SOURCES} ${ENET_SOURCES})
 	target_include_directories(${name} PRIVATE 
 		${ENET_DIR}/include
 		${nlohmann_json_SOURCE_DIR}/single_include
 		${CMAKE_SOURCE_DIR}/src
+		${GENERATED_OUTPUT_DIR}
 	)
-	target_link_libraries(${name} PRIVATE fmt Ws2_32 winmm spdlog)
+	target_link_libraries(${name} PRIVATE fmt Ws2_32 winmm spdlog flatbuffers)
+	add_dependencies(${name} GenerateFlatBuffers)
 endfunction()
 
-add_test_project(test_client examples/test_client.cpp)
-add_test_project(test_server examples/test_server.cpp)
+bs_executable(test_client examples/test_client.cpp)
+bs_executable(test_server examples/test_server.cpp)
+
+add_definitions(-DNOMINMAX)

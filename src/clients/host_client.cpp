@@ -1,7 +1,7 @@
 #include "clients/host_client.h"
 
 Host_Client::Host_Client(logger_t& logger)
-	: Base_Client(-1, logger) 
+	: Base_Client(-1, logger)
 {
 	m_client = enet_host_create(NULL, 1, 2, 0);
 
@@ -42,6 +42,7 @@ void Host_Client::tick(uint32_t timeout_ms) {
 	ENetEvent enet_event{};
 	while (enet_host_service(m_client, &enet_event, timeout_ms) > 0) {
 		Packet packet(enet_event);
+		m_peer = enet_event.peer;
 
 		m_packets.push_front(packet);
 
@@ -56,5 +57,18 @@ void Host_Client::tick(uint32_t timeout_ms) {
 
 		}
 	}
+}
+
+void Host_Client::broadcast_to_server(const Packet& packet, bool reliable) {
+	enet_uint32 flags = 0;
+	if (reliable) {
+		flags |= ENET_PACKET_FLAG_RELIABLE;
+	}
+
+	auto bytes = packet.get_bytes();
+	ASSERT_PANIC(!bytes.empty(), "Trying to broadcast to server but the data is empty");
+	ENetPacket* enet_packet = enet_packet_create(bytes.data(), bytes.size(), flags);
+	ASSERT_PANIC(enet_packet != nullptr, "Error creating packet");
+	enet_peer_send(m_peer, 0, enet_packet);
 }
 

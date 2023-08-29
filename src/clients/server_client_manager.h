@@ -16,11 +16,12 @@ public:
 	Server_Client_Manager(logger_t& logger)
 		: m_logger(logger) {}
 
-	server_client_ptr add_client(ENetPeer& peer);
+	server_client_ptr add_client(ENetPeer* peer);
+	void remove_client(const ENetPeer* peer);
 
-	server_client_ptr get_client(const client_id id) {
-		if (m_clients.find(id) != m_clients.end()) {
-			return m_clients[id];
+	server_client_ptr get_client(ENetPeer* peer) {
+		if (m_clients.find(peer) != m_clients.end()) {
+			return m_clients[peer];
 		}
 
 		return nullptr;
@@ -33,7 +34,7 @@ private:
 	void send(server_client_ptr client, ENetPacket* packet);
 	ENetPacket* create_enet_packet(const Packet& packet, bool reliable);
 
-	std::unordered_map<client_id, server_client_ptr> m_clients;
+	std::unordered_map<ENetPeer*, server_client_ptr> m_clients;
 	logger_t m_logger;
 };
 

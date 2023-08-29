@@ -33,7 +33,7 @@ void Game_Server::start() {
 }
 
 void Game_Server::on_client_connect(Packet& packet) {
-	auto client = m_client_manager.add_client(*packet.get_peer());
+	auto client = m_client_manager.add_client(packet.get_peer());
 
 	m_logger->info("Adding new client to client manager at slot: {}", client->get_slot());
 	ASSERT_PANIC(client != nullptr, "Error trying to add new client");
@@ -41,9 +41,8 @@ void Game_Server::on_client_connect(Packet& packet) {
 }
 
 void Game_Server::on_client_disconnect(Packet& packet) {
-	//auto client = m_client_manager.get_client_from_event(event);
-	//ASSERT_PANIC(client != nullptr, "{}: Client not found", __FUNCTION__);
-	TODO;
+	m_logger->info("Disconnecting client: {}", packet.get_client_id());
+	m_client_manager.remove_client(packet.get_peer());
 }
 
 void Game_Server::tick(uint32_t timeout_ms) {

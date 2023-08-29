@@ -5,6 +5,7 @@
 #include <thread>
 
 #include "enet.h"
+#include "messages_generated.h"
 
 const char* host = "localhost";
 int32_t port = 1234;
@@ -16,6 +17,8 @@ int main() {
 	Host_Client* client = enet.create_host_client();
 	ASSERT_PANIC(client->connect(host, port), "Error connecting client to server");
 
+	flatbuffers::FlatBufferBuilder fbb;
+
 	while (true) {
 		client->tick(0);
 
@@ -25,11 +28,19 @@ int main() {
 			switch (packet.get_type()) {
 			case Packet::CONNECT: {
 				client->get_logger()->info("Connected to server!");
+
+				fbb.Clear();
+				auto message = Game::CreateClientReadyMessage(fbb);
+				fbb.Finish(message);
+
+				Packet response(fbb.GetBufferPointer(), fbb.GetSize());
+				client->broadcast_to_server(response);
 				break;
 			}
 
 			case Packet::DISCONNECT: {
 				client->get_logger()->info("Disconnected to server!");
+
 				break;
 			}
 

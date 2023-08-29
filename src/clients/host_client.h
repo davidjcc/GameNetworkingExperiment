@@ -25,9 +25,14 @@ public:
 
 	Ts_Packet_Queue& get_packets() { return m_packets; }
 
+	ENetPeer* get_peer() const { return m_peer; }
+
+	void broadcast_to_server(const Packet& packet, bool reliable = true);
+
 private:
 	ENetHost* m_client = nullptr;
 	ENetPeer* m_server = nullptr;
+	ENetPeer* m_peer = nullptr;
 	int32_t m_port;
 	const char* m_host;
 

@@ -5,6 +5,7 @@
 #include <thread>
 
 #include "enet.h"
+#include "messages_generated.h"
 
 const char* host = "localhost";
 int32_t port = 1234;
@@ -20,6 +21,8 @@ int main() {
 	server = enet.create_server(host, port, 100);
 	server->start();
 
+	flatbuffers::FlatBufferBuilder builder;
+
 	while (true) {
 		server->tick(0);
 
@@ -28,28 +31,46 @@ int main() {
 			auto packet = packets.pop_front();
 			switch (packet.get_type()) {
 			case Packet::CONNECT: {
-				server->get_logger()->info("Connected to server!");
+				server->get_logger()->info("A new client has connected: {}", (size_t)packet.get_peer());
 
-				Packet response(packet.get_peer());
-
+				auto message = Game::CreateClientConnectedMessage(builder, Game::MessageType::MessageType_ClientConnected);
+				builder.Finish(message);
+				enet_peer_send(packet.get_peer(), 0, enet_packet_create(builder.GetBufferPointer(), builder.GetSize(), ENET_PACKET_FLAG_RELIABLE));
+				builder.Clear();
 				break;
 			}
 
 			case Packet::DISCONNECT: {
-				server->get_logger()->info("Disconnected to server!");
+				server->get_logger()->info("A client has disconnected: {}", (size_t)packet.get_peer());
 				break;
 			}
 
 			case Packet::EVENT_RECIEVED: {
-				server->get_logger()->info("Recieved a packet from the client: {}", packet.get_string());
+				auto packet_string = packet.get_string();
+				server->get_logger()->info("Recieved a packet from the client: {}", packet_string);
+
+				// Deserialize the packet in to a flatbuffer
+				const auto* message = flatbuffers::GetRoot<Game::MessageUnion>(packet_string.c_str());
+				auto type = *message;
+
+				// We can now switch on the type returned and act accordingly.
+				switch (type) {
+				case Game::MessageType::MessageType_ClientConnected: {
+				} break;
+
+				case Game::MessageType::MessageType_ClientDisconnected: {
+				} break;
+
+				case Game::MessageType::MessageType_ClientReady: {
+				} break;
+
+				default:
+					UNREACHABLE();
+				}
 				break;
 			}
 			}
 		}
-
-		Packet reply;
-		reply.set_string("Hello there!");
-		server->broadcast_to_clients(reply, true);
 	}
 
 	enet.destroy_server(server);
