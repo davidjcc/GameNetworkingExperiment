@@ -43,9 +43,9 @@ set(ENET_SOURCES
 	${ENET_DIR}/win32.c
 )
 
-set(FBS_FILES ${CMAKE_SOURCE_DIR}/src/messages/messages.fbs)
-set(GENERATED_OUTPUT_DIR ${CMAKE_SOURCE_DIR}/.generated)
-set(GENERATED_FILES ${GENERATED_OUTPUT_DIR}/messages_generated.h)
+set(FBS_FILES ${CMAKE_SOURCE_DIR}/examples/game_messages.fbs)
+set(GENERATED_OUTPUT_DIR ${CMAKE_SOURCE_DIR}/examples)
+set(GENERATED_FILES ${GENERATED_OUTPUT_DIR}/game_messages_generated.h)
 
 add_custom_command(
 	OUTPUT ${GENERATED_FILES}

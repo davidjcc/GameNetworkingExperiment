@@ -5,7 +5,7 @@
 #include <thread>
 
 #include "enet.h"
-#include "messages_generated.h"
+#include "game_messages_generated.h"
 
 const char* host = "localhost";
 int32_t port = 1234;

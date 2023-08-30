@@ -1,7 +1,7 @@
 #pragma once
 #include <enet/enet.h>
 
-#include "messages_generated.h"
+#include "game_messages_generated.h"
 
 #include "packet.h"
 

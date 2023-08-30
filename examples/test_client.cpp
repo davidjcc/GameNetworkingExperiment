@@ -5,7 +5,7 @@
 #include <thread>
 
 #include "enet.h"
-#include "messages_generated.h"
+#include "game_messages_generated.h"
 
 #include "game_messages.h"
 
@@ -48,9 +48,14 @@ int main() {
 		}
 
 		if (client->get_peer()) {
-			static float x = 100.0f;
-			static float y = 200.0f;
-			Game::Messages::create_ball_moved_message(client->get_peer(), builder, x += 54.0f, y += 132.0f).send(true);
+			Game::Messages::create_ball_moved_message(client->get_peer(), builder, 100.0f, 200.0f)
+				.send(true);
+
+			/*
+				Or we can do:
+				Packet response = Game::Messages::create_ball_moved_message(client->get_peer(), builder, 100.0f, 200.0f);
+				client->broadcast_to_server(response);
+			*/
 		}
 
 	}
