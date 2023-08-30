@@ -7,6 +7,8 @@
 #include "enet.h"
 #include "messages_generated.h"
 
+#include "game_messages.h"
+
 const char* host = "localhost";
 int32_t port = 1234;
 
@@ -20,7 +22,7 @@ int main() {
 	flatbuffers::FlatBufferBuilder builder;
 
 	while (true) {
-		client->tick(1000);
+		client->tick(2000);
 
 		auto& packets = client->get_packets();
 		while (!packets.empty()) {
@@ -43,18 +45,14 @@ int main() {
 				break;
 			}
 			}
-
-			if (client->get_peer()) {
-				builder.Clear();
-
-				auto ball_moved = Game::CreateBallMovedMessage(builder, Game::CreateVec2(builder, 10.0f, 20.0f));
-				auto message = Game::CreateMessage(builder, Game::AnyMessage_BallMovedMessage, ball_moved.Union());
-				builder.Finish(message);
-
-				packet.set_bytes(builder.GetBufferPointer(), builder.GetSize());
-				client->broadcast_to_server(packet, true);
-			}
 		}
+
+		if (client->get_peer()) {
+			static float x = 100.0f;
+			static float y = 200.0f;
+			Game::Messages::create_ball_moved_message(client->get_peer(), builder, x += 54.0f, y += 132.0f).send(true);
+		}
+
 	}
 
 	enet.destroy_client(client);
