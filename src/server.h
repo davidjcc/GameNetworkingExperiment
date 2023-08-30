@@ -12,12 +12,12 @@
 #include "utils.h"
 
 
-class Game_Server {
+class Host_Server {
 public:
-	NO_COPY_NO_MOVE(Game_Server);
+	NO_COPY_NO_MOVE(Host_Server);
 
-	Game_Server(const char* host, int32_t port, int32_t max_clients, logger_t& logger);
-	~Game_Server();
+	Host_Server(const char* host, int32_t port, int32_t max_clients, logger_t& logger);
+	~Host_Server();
 
 	void set_logger(logger_t& logger) {
 		m_logger = logger;

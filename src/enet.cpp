@@ -20,10 +20,10 @@ ENet::~ENet() {
 	}
 }
 
-Game_Server* ENet::create_server(const char* host, int port, int max_clients) {
+Host_Server* ENet::create_server(const char* host, int port, int max_clients) {
 	m_logger->info("Creating new server: host => {} port => {} max_clients => {}", host, port, max_clients);
 
-	auto* result = new Game_Server(host, port, max_clients, m_logger);
+	auto* result = new Host_Server(host, port, max_clients, m_logger);
 
 	if (result == nullptr) {
 		PANIC("Failed trying to create a new server");
@@ -32,7 +32,7 @@ Game_Server* ENet::create_server(const char* host, int port, int max_clients) {
 	return result;
 }
 
-void ENet::destroy_server(Game_Server* server) {
+void ENet::destroy_server(Host_Server* server) {
 	m_logger->info("Destroying server");
 	SAFE_DELETE(server);
 }

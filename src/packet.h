@@ -19,8 +19,8 @@ public:
 	};
 
 	Packet(const ENetEvent& event);
-	Packet(ENetPeer* event);
-	Packet(void* data, size_t data_length);
+	Packet(ENetPeer* peer);
+	Packet(ENetPeer* peer, void* data, size_t data_length);
 	Packet() = default;
 	~Packet();
 
@@ -32,6 +32,11 @@ public:
 
 	std::string get_string() const;
 	std::vector<uint8_t> get_bytes() const;
+
+	void set_bytes(void* data, size_t length) {
+		m_bytes.clear();
+		m_bytes.assign(reinterpret_cast<uint8_t*>(data), reinterpret_cast<uint8_t*>(data) + length);
+	}
 
 	void set_bytes(const std::vector<uint8_t>& data) { m_bytes = data; }
 	void set_string(const std::string& str) { m_bytes.assign(str.begin(), str.end()); }

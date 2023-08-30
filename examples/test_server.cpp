@@ -15,7 +15,7 @@ int main() {
 	//logger->set_level(spdlog::level::trace);
 	ENet enet(logger);
 
-	Game_Server* server = nullptr;
+	Host_Server* server = nullptr;
 	bool running = true;
 
 	server = enet.create_server(host, port, 100);

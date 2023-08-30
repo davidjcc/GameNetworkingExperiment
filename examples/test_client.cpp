@@ -17,6 +17,7 @@ int main() {
 	Host_Client* client = enet.create_host_client();
 	ASSERT_PANIC(client->connect(host, port), "Error connecting client to server");
 
+	flatbuffers::FlatBufferBuilder builder;
 
 	while (true) {
 		client->tick(1000);
@@ -44,14 +45,14 @@ int main() {
 			}
 
 			if (client->get_peer()) {
-				flatbuffers::FlatBufferBuilder builder;
+				builder.Clear();
+
 				auto ball_moved = Game::CreateBallMovedMessage(builder, Game::CreateVec2(builder, 10.0f, 20.0f));
 				auto message = Game::CreateMessage(builder, Game::AnyMessage_BallMovedMessage, ball_moved.Union());
 				builder.Finish(message);
 
-				Packet response(builder.GetBufferPointer(), builder.GetSize());
-				response.set_peer(packet.get_peer());
-				response.send(true);
+				packet.set_bytes(builder.GetBufferPointer(), builder.GetSize());
+				client->broadcast_to_server(packet, true);
 			}
 		}
 	}

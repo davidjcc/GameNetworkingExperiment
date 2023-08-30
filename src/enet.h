@@ -12,8 +12,8 @@ public:
 	ENet(logger_t& logger);
 	~ENet();
 
-	Game_Server* create_server(const char* host, int port, int max_clients);
-	void destroy_server(Game_Server* server);
+	Host_Server* create_server(const char* host, int port, int max_clients);
+	void destroy_server(Host_Server* server);
 
 	Host_Client* create_host_client();
 	void destroy_client(Host_Client* client);
