@@ -6,8 +6,8 @@
 #include <list>
 #include <string>
 
-#include "clients/server_client_manager.h"
-#include "clients/base.h"
+#include "server_client_manager.h"
+#include "base.h"
 #include "packet.h"
 #include "utils.h"
 

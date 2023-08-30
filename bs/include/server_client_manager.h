@@ -1,5 +1,5 @@
 #pragma once
-#include "clients/server_client.h"
+#include "server_client.h"
 #include "utils.h"
 #include "packet.h"
 

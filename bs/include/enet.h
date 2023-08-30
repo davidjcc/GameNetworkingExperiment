@@ -1,7 +1,7 @@
 #pragma once
 
 #include "server.h"
-#include "clients/host_client.h"
+#include "host_client.h"
 #include "packet.h"
 #include "utils.h"
 

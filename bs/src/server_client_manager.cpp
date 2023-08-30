@@ -1,5 +1,5 @@
-#include "clients/server_client_manager.h"
-#include "clients/server_client.h"
+#include "server_client_manager.h"
+#include "server_client.h"
 
 server_client_ptr Server_Client_Manager::add_client(ENetPeer* peer) {
 	ASSERT_PANIC(peer != nullptr, "Trying to add client but the peer is NULL");

@@ -4,7 +4,7 @@
 #include <enet/enet.h>
 #include <spdlog/spdlog.h>
 
-#include "clients/base.h"
+#include "base.h"
 #include "utils.h"
 #include "packet.h"
 

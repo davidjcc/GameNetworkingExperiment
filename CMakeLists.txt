@@ -20,17 +20,17 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 
-add_definitions(-D _CRT_SECURE_NO_WARNINGS)
-
-set(SERVER_SOURCES
-	src/enet.cpp
-	src/server.cpp
-	src/clients/host_client.cpp
-	src/clients/server_client_manager.cpp
-	src/packet.cpp
-	
+set(BS_SOURCES
+	bs/src/enet.cpp
+	bs/src/server.cpp
+	bs/src/host_client.cpp
+	bs/src/server_client_manager.cpp
+	bs/src/packet.cpp
 )
 
+add_library(bs STATIC ${BS_SOURCES})
+target_include_directories(bs PUBLIC bs/include ${enet_SOURCE_DIR}/include)
+target_link_libraries(bs PUBLIC spdlog fmt flatbuffers enet Ws2_32)
 
 set(FBS_FILES ${CMAKE_SOURCE_DIR}/examples/game_messages.fbs)
 set(GENERATED_OUTPUT_DIR ${CMAKE_SOURCE_DIR}/examples)
@@ -47,16 +47,14 @@ add_custom_target(GenerateFlatBuffers DEPENDS ${GENERATED_FILES})
 function(bs_executable name entrypoint)
 	add_executable(${name} ${entrypoint} ${SERVER_SOURCES} ${ENET_SOURCES})
 	target_include_directories(${name} PRIVATE 
-		${enet_SOURCE_DIR}/include
-		${CMAKE_SOURCE_DIR}/src
-		${GENERATED_OUTPUT_DIR}
+		bs/include
 	)
-	target_link_libraries(${name} PRIVATE fmt Ws2_32 winmm spdlog flatbuffers enet)
+	target_link_libraries(${name} PRIVATE bs fmt Ws2_32 winmm spdlog flatbuffers enet)
 	add_dependencies(${name} GenerateFlatBuffers)
 endfunction()
 
 bs_executable(test_client examples/test_client.cpp)
 bs_executable(test_server examples/test_server.cpp)
 
-add_definitions(-D NOMINMAX -D _WINSOCK_DEPRECATED_NO_WARNINGS)
- 
+
+add_definitions(-D NOMINMAX -D _WINSOCK_DEPRECATED_NO_WARNINGS -D _CRT_SECURE_NO_WARNINGS)
