@@ -3,7 +3,7 @@
 Host_Client::Host_Client(logger_t& logger)
 	: Base_Client(-1, logger)
 {
-	m_client = enet_host_create(NULL, 1, 2, 0);
+	m_client = enet_host_create(NULL, 1, 2, 0, 0);
 
 	if (!m_client) {
 		PANIC("An error occurred while trying to create an Host client");
@@ -21,7 +21,7 @@ bool Host_Client::connect(const char* host, int32_t port) {
 	ENetAddress address;
 	enet_address_set_host(&address, m_host);
 	address.port = m_port;
-	m_server = enet_host_connect(m_client, &address, 2);
+	m_server = enet_host_connect(m_client, &address, 2, 0);
 	if (!m_server) {
 		PANIC("An error occurred while trying to create an Host peer");
 		return false;

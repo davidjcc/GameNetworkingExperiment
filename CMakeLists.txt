@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 
-project(GamesNetworkingTest)
+project(BS)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -9,6 +9,7 @@ include(cmake/CPM.cmake)
 CPMAddPackage("gh:fmtlib/fmt#10.0.0")
 CPMAddPackage("gh:nlohmann/json@3.11.2")
 CPMAddPackage("gh:google/flatbuffers@23.5.26")
+CPMAddPackage("gh:lsalzman/enet#v1.3.17")
 
 CPMAddPackage(
     NAME spdlog
@@ -31,17 +32,6 @@ set(SERVER_SOURCES
 	
 )
 
-set(ENET_DIR ${CMAKE_SOURCE_DIR}/libs/enet)
-set(ENET_SOURCES
-	${ENET_DIR}/callbacks.c
-	${ENET_DIR}/host.c
-	${ENET_DIR}/list.c
-	${ENET_DIR}/packet.c
-	${ENET_DIR}/peer.c
-	${ENET_DIR}/protocol.c
-	${ENET_DIR}/unix.c
-	${ENET_DIR}/win32.c
-)
 
 set(FBS_FILES ${CMAKE_SOURCE_DIR}/examples/game_messages.fbs)
 set(GENERATED_OUTPUT_DIR ${CMAKE_SOURCE_DIR}/examples)
@@ -58,12 +48,12 @@ add_custom_target(GenerateFlatBuffers DEPENDS ${GENERATED_FILES})
 function(bs_executable name entrypoint)
 	add_executable(${name} ${entrypoint} ${SERVER_SOURCES} ${ENET_SOURCES})
 	target_include_directories(${name} PRIVATE 
-		${ENET_DIR}/include
+		${enet_SOURCE_DIR}/include
 		${nlohmann_json_SOURCE_DIR}/single_include
 		${CMAKE_SOURCE_DIR}/src
 		${GENERATED_OUTPUT_DIR}
 	)
-	target_link_libraries(${name} PRIVATE fmt Ws2_32 winmm spdlog flatbuffers)
+	target_link_libraries(${name} PRIVATE fmt Ws2_32 winmm spdlog flatbuffers enet)
 	add_dependencies(${name} GenerateFlatBuffers)
 endfunction()
 

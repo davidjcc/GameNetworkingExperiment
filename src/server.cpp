@@ -25,7 +25,7 @@ void Host_Server::start() {
 	enet_address_set_host(&m_address, m_host);
 	m_address.port = m_port;
 
-	if (m_server = enet_host_create(&m_address, m_max_clients, 0, 0); m_server == nullptr) {
+	if (m_server = enet_host_create(&m_address, m_max_clients, 0, 0, 0); m_server == nullptr) {
 		PANIC("An error occurred while trying to create an ENet server.");
 	}
 
