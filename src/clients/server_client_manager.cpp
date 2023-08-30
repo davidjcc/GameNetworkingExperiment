@@ -11,7 +11,7 @@ server_client_ptr Server_Client_Manager::add_client(ENetPeer* peer) {
 	return m_clients[peer];
 }
 
-void Server_Client_Manager::remove_client(const ENetPeer* peer) {
+void Server_Client_Manager::disconnect_client(const ENetPeer* peer) {
 	for (auto& [id, client] : m_clients) {
 		if (id == peer) {
 			client->disconnect();

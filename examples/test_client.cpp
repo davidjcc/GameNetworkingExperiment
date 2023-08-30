@@ -17,24 +17,16 @@ int main() {
 	Host_Client* client = enet.create_host_client();
 	ASSERT_PANIC(client->connect(host, port), "Error connecting client to server");
 
-	flatbuffers::FlatBufferBuilder fbb;
 
 	while (true) {
-		client->tick(0);
+		client->tick(1000);
 
 		auto& packets = client->get_packets();
 		while (!packets.empty()) {
-			auto packet = packets.pop_front();
+			auto packet = packets.pop_back();
 			switch (packet.get_type()) {
 			case Packet::CONNECT: {
 				client->get_logger()->info("Connected to server!");
-
-				fbb.Clear();
-				auto message = Game::CreateClientReadyMessage(fbb);
-				fbb.Finish(message);
-
-				Packet response(fbb.GetBufferPointer(), fbb.GetSize());
-				client->broadcast_to_server(response);
 				break;
 			}
 
@@ -45,9 +37,21 @@ int main() {
 			}
 
 			case Packet::EVENT_RECIEVED: {
-				client->get_logger()->info("Recieved a packet from the client: {}", packet.get_string());
+				client->get_logger()->info("Recieved a packet from the server: {}", packet.get_string());
+
 				break;
 			}
+			}
+
+			if (client->get_peer()) {
+				flatbuffers::FlatBufferBuilder builder;
+				auto ball_moved = Game::CreateBallMovedMessage(builder, Game::CreateVec2(builder, 10.0f, 20.0f));
+				auto message = Game::CreateMessage(builder, Game::AnyMessage_BallMovedMessage, ball_moved.Union());
+				builder.Finish(message);
+
+				Packet response(builder.GetBufferPointer(), builder.GetSize());
+				response.set_peer(packet.get_peer());
+				response.send(true);
 			}
 		}
 	}

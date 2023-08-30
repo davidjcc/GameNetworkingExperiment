@@ -44,3 +44,11 @@ std::string Packet::get_string() const {
 std::vector<uint8_t> Packet::get_bytes() const {
 	return m_bytes;
 }
+
+void Packet::send(bool reliable) {
+	ASSERT_PANIC(m_peer, "Peer is null");
+	ASSERT_PANIC(!m_bytes.empty(), "Bytes are empty");
+
+	enet_peer_send(m_peer, 0,
+		enet_packet_create(m_bytes.data(), m_bytes.size(), (reliable ? ENET_PACKET_FLAG_RELIABLE : 0)));
+}

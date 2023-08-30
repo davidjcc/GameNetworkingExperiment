@@ -1,32 +1,42 @@
-
 namespace Game;
 
-enum MessageType:byte {
-	ClientConnected = 0,
-	ClientDisconnected,
-	ClientReady,
+table Vec2 {
+	x: float;
+	y: float;
 }
 
+
 table ClientConnectedMessage {
-	type: MessageType = ClientConnected;
-	client_id: int;
+	test_data: string;
 }
 
 table ClientReadyMessage {
-	type: MessageType = ClientReady;
-	client_id: int;
 }
 
 table ClientDisconnectedMessage {
-	type: MessageType = ClientConnected;
-	client_id: int;
 }
 
-union MessageUnion {
+table PlayerMovedMessage {
+	pos: Vec2;
+}
+
+table BallMovedMessage {
+	pos: Vec2;
+}
+
+union AnyMessage {
 	ClientConnectedMessage,
 	ClientDisconnectedMessage,
 	ClientReadyMessage,
+	PlayerMovedMessage,
+	BallMovedMessage
 }
+
+table Message {
+	payload: AnyMessage;
+}
+
+root_type Message;
 
 
 

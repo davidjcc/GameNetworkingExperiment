@@ -17,7 +17,7 @@ public:
 		: m_logger(logger) {}
 
 	server_client_ptr add_client(ENetPeer* peer);
-	void remove_client(const ENetPeer* peer);
+	void disconnect_client(const ENetPeer* peer);
 
 	server_client_ptr get_client(ENetPeer* peer) {
 		if (m_clients.find(peer) != m_clients.end()) {

@@ -37,6 +37,8 @@ public:
 	void set_string(const std::string& str) { m_bytes.assign(str.begin(), str.end()); }
 	void set_type(Type type) { m_type = type; }
 
+	void send(bool reliable);
+
 private:
 	int32_t m_client_id = -1;
 	Type m_type = NONE;
@@ -67,6 +69,14 @@ public:
 
 		auto result = std::move(m_packets.front());
 		m_packets.pop_front();
+		return result;
+	}
+
+	Packet pop_back() {
+		std::scoped_lock lock(m_mutex);
+
+		auto result = std::move(m_packets.front());
+		m_packets.pop_back();
 		return result;
 	}
 

@@ -41,8 +41,8 @@ void Game_Server::on_client_connect(Packet& packet) {
 }
 
 void Game_Server::on_client_disconnect(Packet& packet) {
-	m_logger->info("Disconnecting client: {}", packet.get_client_id());
-	m_client_manager.remove_client(packet.get_peer());
+	m_logger->info("Disconnecting client: {}", (size_t)packet.get_peer());
+	m_client_manager.disconnect_client(packet.get_peer());
 }
 
 void Game_Server::tick(uint32_t timeout_ms) {

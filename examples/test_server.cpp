@@ -28,15 +28,10 @@ int main() {
 
 		auto& packets = server->get_packets();
 		while (!packets.empty()) {
-			auto packet = packets.pop_front();
+			auto packet = packets.pop_back();
 			switch (packet.get_type()) {
 			case Packet::CONNECT: {
 				server->get_logger()->info("A new client has connected: {}", (size_t)packet.get_peer());
-
-				auto message = Game::CreateClientConnectedMessage(builder, Game::MessageType::MessageType_ClientConnected);
-				builder.Finish(message);
-				enet_peer_send(packet.get_peer(), 0, enet_packet_create(builder.GetBufferPointer(), builder.GetSize(), ENET_PACKET_FLAG_RELIABLE));
-				builder.Clear();
 				break;
 			}
 
@@ -46,26 +41,48 @@ int main() {
 			}
 
 			case Packet::EVENT_RECIEVED: {
-				auto packet_string = packet.get_string();
-				server->get_logger()->info("Recieved a packet from the client: {}", packet_string);
+				auto packet_bytes = packet.get_bytes();
 
-				// Deserialize the packet in to a flatbuffer
-				const auto* message = flatbuffers::GetRoot<Game::MessageUnion>(packet_string.c_str());
-				auto type = *message;
+				flatbuffers::Verifier verifier(packet_bytes.data(), packet_bytes.size());
+				if (!Game::VerifyMessageBuffer(verifier)) {
+					server->get_logger()->error("Verifier failed");
+					break;
+				}
+
+				const auto* message = flatbuffers::GetRoot<Game::Message>(packet_bytes.data());
 
 				// We can now switch on the type returned and act accordingly.
+				auto type = message->payload_type();
+				server->get_logger()->info("Packet type is: {}", Game::EnumNameAnyMessage(type));
+
 				switch (type) {
-				case Game::MessageType::MessageType_ClientConnected: {
+				case Game::AnyMessage_ClientConnectedMessage: {
+					const auto* client_msg = message->payload_as_ClientConnectedMessage();
+					break;
+				}
+
+				case Game::AnyMessage_ClientDisconnectedMessage: {
+					const auto* client_msg = message->payload_as_ClientDisconnectedMessage();
 				} break;
 
-				case Game::MessageType::MessageType_ClientDisconnected: {
+				case Game::AnyMessage_ClientReadyMessage: {
+					const auto* client_msg = message->payload_as_ClientReadyMessage();
 				} break;
 
-				case Game::MessageType::MessageType_ClientReady: {
-				} break;
+				case Game::AnyMessage_PlayerMovedMessage: {
+					const auto* client_msg = message->payload_as_PlayerMovedMessage();
+					break;
+				}
+
+				case Game::AnyMessage_BallMovedMessage: {
+					const auto* client_msg = message->payload_as_BallMovedMessage();
+
+					server->get_logger()->info("Ball moved to: {}, {}", client_msg->pos()->x(), client_msg->pos()->y());
+					break;
+				}
 
 				default:
-					UNREACHABLE();
+					server->get_logger()->error("Unknown message type");
 				}
 				break;
 			}
