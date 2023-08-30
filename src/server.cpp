@@ -2,7 +2,6 @@
 
 #include <spdlog/spdlog.h>
 #include <enet/enet.h>
-#include <nlohmann/json.hpp>
 
 #include <string>
 #include <array>

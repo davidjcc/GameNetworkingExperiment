@@ -7,7 +7,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 include(cmake/CPM.cmake)
 
 CPMAddPackage("gh:fmtlib/fmt#10.0.0")
-CPMAddPackage("gh:nlohmann/json@3.11.2")
 CPMAddPackage("gh:google/flatbuffers@23.5.26")
 CPMAddPackage("gh:lsalzman/enet#v1.3.17")
 
@@ -39,7 +38,7 @@ set(GENERATED_FILES ${GENERATED_OUTPUT_DIR}/game_messages_generated.h)
 
 add_custom_command(
 	OUTPUT ${GENERATED_FILES}
-	COMMAND ${CMAKE_SOURCE_DIR}/bin/flatc.exe --cpp -o ${GENERATED_OUTPUT_DIR} ${FBS_FILES}
+	COMMAND ${flatbuffers_BINARY_DIR}/flatc --cpp -o ${GENERATED_OUTPUT_DIR} ${FBS_FILES}
 	DEPENDS flatc ${FBS_FILES}
 	COMMENT "Generating messages..."
 )
@@ -49,7 +48,6 @@ function(bs_executable name entrypoint)
 	add_executable(${name} ${entrypoint} ${SERVER_SOURCES} ${ENET_SOURCES})
 	target_include_directories(${name} PRIVATE 
 		${enet_SOURCE_DIR}/include
-		${nlohmann_json_SOURCE_DIR}/single_include
 		${CMAKE_SOURCE_DIR}/src
 		${GENERATED_OUTPUT_DIR}
 	)
@@ -60,4 +58,5 @@ endfunction()
 bs_executable(test_client examples/test_client.cpp)
 bs_executable(test_server examples/test_server.cpp)
 
-add_definitions(-DNOMINMAX)
+add_definitions(-D NOMINMAX -D _WINSOCK_DEPRECATED_NO_WARNINGS)
+ 
