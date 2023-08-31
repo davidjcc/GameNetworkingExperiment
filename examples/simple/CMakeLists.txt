@@ -2,10 +2,10 @@ cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 
 project(SimpleExample)
 
-set(GENERATED_OUTPUT_DIR ${CMAKE_PROJECT_DIR})
+set(GENERATED_OUTPUT_DIR ${SimpleExample_SOURCE_DIR}/.generated)
 
 set(FBS_FILES 
-	${CMAKE_PROJECT_DIR}game_messages.fbs
+	${SimpleExample_SOURCE_DIR}/game_messages.fbs
 )
 
 set(GENERATED_FILES 
@@ -24,11 +24,12 @@ function(simple_executable name entrypoint)
 	add_executable(${name} ${entrypoint} ${SERVER_SOURCES} ${ENET_SOURCES})
 	target_include_directories(${name} PRIVATE 
 		bs/include
+		${GENERATED_OUTPUT_DIR}
 	)
 	target_link_libraries(${name} PRIVATE bs fmt Ws2_32 winmm spdlog flatbuffers enet)
 	add_dependencies(${name} GenerateFlatBuffers)
 endfunction()
 
-simple_executable(test_client simple_client.cpp)
-simple_executable(test_server simple_server.cpp)
+simple_executable(test_client src/simple_client.cpp)
+simple_executable(test_server src/simple_server.cpp)
 
