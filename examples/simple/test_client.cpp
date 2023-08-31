@@ -7,7 +7,6 @@
 #include "enet.h"
 #include "game_messages_generated.h"
 
-#include "game_messages.h"
 #include "config.h"
 #include "base_game_host.h"
 

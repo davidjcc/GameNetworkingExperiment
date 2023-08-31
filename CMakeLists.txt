@@ -32,8 +32,8 @@ add_library(bs STATIC ${BS_SOURCES})
 target_include_directories(bs PUBLIC bs/include ${enet_SOURCE_DIR}/include)
 target_link_libraries(bs PUBLIC spdlog fmt flatbuffers enet Ws2_32)
 
-set(FBS_FILES ${CMAKE_SOURCE_DIR}/examples/game_messages.fbs)
-set(GENERATED_OUTPUT_DIR ${CMAKE_SOURCE_DIR}/examples)
+set(FBS_FILES ${CMAKE_SOURCE_DIR}/examples/simple/game_messages.fbs)
+set(GENERATED_OUTPUT_DIR ${CMAKE_SOURCE_DIR}/examples/simple)
 set(GENERATED_FILES ${GENERATED_OUTPUT_DIR}/game_messages_generated.h)
 
 add_custom_command(
@@ -53,8 +53,8 @@ function(bs_executable name entrypoint)
 	add_dependencies(${name} GenerateFlatBuffers)
 endfunction()
 
-bs_executable(test_client examples/test_client.cpp)
-bs_executable(test_server examples/test_server.cpp)
+bs_executable(test_client examples/simple/test_client.cpp)
+bs_executable(test_server examples/simple/test_server.cpp)
 
 
 add_definitions(-D NOMINMAX -D _WINSOCK_DEPRECATED_NO_WARNINGS -D _CRT_SECURE_NO_WARNINGS)
