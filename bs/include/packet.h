@@ -27,8 +27,10 @@ public:
 	ENetPeer* get_peer() const { return m_peer; }
 	void set_peer(ENetPeer* peer) { m_peer = peer; }
 
+	void set_client_id(int32_t id) { m_client_id = id; }
+
 	Type get_type() const { return m_type; }
-	size_t get_client_id() const { return m_client_id; }
+	int32_t get_client_id() const { return m_client_id; }
 
 	std::string get_string() const;
 	std::vector<uint8_t> get_bytes() const;

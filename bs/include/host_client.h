@@ -10,18 +10,16 @@
 
 class Host_Client : public Base_Client {
 public:
-	using poll_callback = void(*)(Host_Client*, Packet*);
-
 	Host_Client(logger_t& logger);
 	~Host_Client();
 
-	void on_connect(Packet& packet);
-	void on_disconnect(Packet& packet);
+	void on_connect();
+	void on_disconnect();
 
 	ENetHost* get_host() const { return m_client; }
 	void tick(uint32_t timeout);
 
-	bool connect(const char* host, int32_t port);
+	bool start(const char* host, int32_t port);
 
 	Ts_Packet_Queue& get_packets() { return m_packets; }
 

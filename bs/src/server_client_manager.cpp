@@ -4,7 +4,7 @@
 server_client_ptr Server_Client_Manager::add_client(ENetPeer* peer) {
 	ASSERT_PANIC(peer != nullptr, "Trying to add client but the peer is NULL");
 
-	client_id id = m_clients.size();
+	client_id id = (client_id)m_clients.size();
 
 	auto inserted = m_clients.insert({ peer, std::make_shared<Server_Client>(peer, id, m_logger) });
 

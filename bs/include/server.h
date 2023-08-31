@@ -34,6 +34,8 @@ public:
 
 	Ts_Packet_Queue& get_packets() { return m_packets; }
 
+	auto& get_client_manager() { return m_client_manager; }
+
 private:
 	void on_client_connect(Packet& packet);
 	void on_client_disconnect(Packet& packet);

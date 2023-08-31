@@ -6,91 +6,67 @@
 
 #include "enet.h"
 #include "game_messages_generated.h"
+#include "game_messages.h"
 
-const char* host = "localhost";
-int32_t port = 1234;
+#include "config.h"
+#include "base_game_host.h"
 
 int main() {
 	auto logger = spdlog::stdout_color_mt("SERVER");
-	//logger->set_level(spdlog::level::trace);
-	ENet enet(logger);
 
-	Host_Server* server = nullptr;
-	bool running = true;
+	auto server = Game_Host<Host_Server>(logger, SAMPLES_HOST, SAMPLES_PORT);
 
-	server = enet.create_server(host, port, 100);
-	server->start();
+	server.set_tick_callback([&](const Game::Message* message, const Packet* packet) {
+		auto type = message->payload_type();
 
-	flatbuffers::FlatBufferBuilder builder;
+		switch (type) {
+		case Game::Any_ClientConnectedRequest: {
+			const auto* client_msg = message->payload_as_ClientConnectedRequest();
 
-	while (true) {
-		server->tick(0);
+			auto client = server.get_host_type()->get_client_manager().get_client(packet->get_peer());
 
-		auto& packets = server->get_packets();
-		while (!packets.empty()) {
-			auto packet = packets.pop_back();
-			switch (packet.get_type()) {
-			case Packet::CONNECT: {
-				server->get_logger()->info("A new client has connected: {}", (size_t)packet.get_peer());
-				break;
-			}
+			Packet packet = server.create_client_connect_response(client->get_id());
+			packet.set_peer(client->get_peer());
+			packet.send(true);
+			break;
+		}
 
-			case Packet::DISCONNECT: {
-				server->get_logger()->info("A client has disconnected: {}", (size_t)packet.get_peer());
-				break;
-			}
+		case Game::Any_ClientDisconnected: {
+			const auto* client_msg = message->payload_as_ClientDisconnected();
+		} break;
 
-			case Packet::EVENT_RECIEVED: {
-				auto packet_bytes = packet.get_bytes();
+		case Game::Any_ClientReady: {
+			const auto* client_msg = message->payload_as_ClientReady();
+		} break;
 
-				flatbuffers::Verifier verifier(packet_bytes.data(), packet_bytes.size());
-				if (!Game::VerifyMessageBuffer(verifier)) {
-					server->get_logger()->error("Verifier failed");
-					break;
-				}
+		case Game::Any_PlayerMoved: {
+			const auto* client_msg = message->payload_as_PlayerMoved();
+			break;
+		}
 
-				const auto* message = flatbuffers::GetRoot<Game::Message>(packet_bytes.data());
+		case Game::Any_BallMoved: {
+			const auto* client_msg = message->payload_as_BallMoved();
 
-				// We can now switch on the type returned and act accordingly.
-				auto type = message->payload_type();
-				server->get_logger()->info("Packet type is: {}", Game::EnumNameAnyMessage(type));
+			server.get_logger()->info("Ball moved to: {}, {}", client_msg->pos()->x(), client_msg->pos()->y());
+			break;
+		}
 
-				switch (type) {
-				case Game::AnyMessage_ClientConnectedMessage: {
-					const auto* client_msg = message->payload_as_ClientConnectedMessage();
-					break;
-				}
+		default:
+			server.get_logger()->error("Unknown message type");
+		}
+		});
 
-				case Game::AnyMessage_ClientDisconnectedMessage: {
-					const auto* client_msg = message->payload_as_ClientDisconnectedMessage();
-				} break;
+	while (1) {
+		server.tick();
 
-				case Game::AnyMessage_ClientReadyMessage: {
-					const auto* client_msg = message->payload_as_ClientReadyMessage();
-				} break;
+		// Once we have connected clients we can start
+		// sending them game updates.
+		if (!server->get_client_manager().empty()) {
 
-				case Game::AnyMessage_PlayerMovedMessage: {
-					const auto* client_msg = message->payload_as_PlayerMovedMessage();
-					break;
-				}
-
-				case Game::AnyMessage_BallMovedMessage: {
-					const auto* client_msg = message->payload_as_BallMovedMessage();
-
-					server->get_logger()->info("Ball moved to: {}, {}", client_msg->pos()->x(), client_msg->pos()->y());
-					break;
-				}
-
-				default:
-					server->get_logger()->error("Unknown message type");
-				}
-				break;
-			}
-			}
+			Packet packet = server.create_ball_moved(10.0f, 20.0f);
+			server->broadcast_to_clients(packet, true);
 		}
 	}
-
-	enet.destroy_server(server);
 
 	return EXIT_SUCCESS;
 }

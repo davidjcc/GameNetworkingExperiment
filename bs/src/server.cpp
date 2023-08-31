@@ -34,7 +34,7 @@ void Host_Server::start() {
 void Host_Server::on_client_connect(Packet& packet) {
 	auto client = m_client_manager.add_client(packet.get_peer());
 
-	m_logger->info("Adding new client to client manager at slot: {}", client->get_slot());
+	m_logger->info("Adding new client to client manager at slot: {}", client->get_id());
 	ASSERT_PANIC(client != nullptr, "Error trying to add new client");
 	client->connect();
 }
@@ -48,6 +48,12 @@ void Host_Server::tick(uint32_t timeout_ms) {
 	ENetEvent enet_event{};
 	while (enet_host_service(m_server, &enet_event, timeout_ms) > 0) {
 		Packet packet(enet_event);
+
+		// If there is a stored client attached to this peer then add that to the packet.
+		auto client = m_client_manager.get_client(enet_event.peer);
+		if (client) {
+			packet.set_client_id(client->get_id());
+		}
 		m_packets.push_front(packet);
 
 		switch (packet.get_type()) {

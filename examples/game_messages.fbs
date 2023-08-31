@@ -5,38 +5,36 @@ table Vec2 {
 	y: float;
 }
 
+table ClientConnectedRequest { }
+table ClientConnectedResponse { client_id: int; }
 
-table ClientConnectedMessage {
-	test_data: string;
-}
+table ClientDisconnected { }
 
-table ClientReadyMessage {
-}
+table ClientReady { }
 
-table ClientDisconnectedMessage {
-}
-
-table PlayerMovedMessage {
+table PlayerMoved {
 	pos: Vec2;
 }
 
-table BallMovedMessage {
+table BallMoved {
 	pos: Vec2;
 }
 
-union AnyMessage {
-	ClientConnectedMessage,
-	ClientDisconnectedMessage,
-	ClientReadyMessage,
-	PlayerMovedMessage,
-	BallMovedMessage
+union Any {
+	ClientConnectedRequest,
+	ClientConnectedResponse,
+
+	ClientDisconnected,
+
+	ClientReady,
+
+	PlayerMoved,
+	BallMoved
 }
 
 table Message {
-	payload: AnyMessage;
+	payload: Any;
 }
 
 root_type Message;
-
-
 

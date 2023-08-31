@@ -14,7 +14,7 @@ Host_Client::~Host_Client() {
 	enet_host_destroy(m_client);
 }
 
-bool Host_Client::connect(const char* host, int32_t port) {
+bool Host_Client::start(const char* host, int32_t port) {
 	m_host = host;
 	m_port = port;
 
@@ -30,12 +30,14 @@ bool Host_Client::connect(const char* host, int32_t port) {
 	return true;
 }
 
-void Host_Client::on_connect(Packet& packet) {
+void Host_Client::on_connect() {
 	m_logger->info("Client connected");
+	m_state = CONNECTED;
 }
 
-void Host_Client::on_disconnect(Packet& packet) {
+void Host_Client::on_disconnect() {
 	m_logger->info("Client disconnected");
+	m_state = DISCONNECTED;
 }
 
 void Host_Client::tick(uint32_t timeout_ms) {
@@ -48,11 +50,11 @@ void Host_Client::tick(uint32_t timeout_ms) {
 
 		switch (packet.get_type()) {
 		case Packet::CONNECT: {
-			on_connect(packet);
+			on_connect();
 		} break;
 
 		case Packet::DISCONNECT: {
-			on_disconnect(packet);
+			on_disconnect();
 		} break;
 
 		}

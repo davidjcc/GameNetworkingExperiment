@@ -27,6 +27,9 @@ public:
 		return nullptr;
 	}
 
+	bool empty() const { return m_clients.empty(); }
+	bool size() const { return m_clients.size(); }
+
 	void broadcast_to_clients(const Packet& packet, bool reliable);
 	void broadcast_to_client(server_client_ptr& client, const Packet& packet, bool reliable);
 	void broadcast_to_client(client_id& id, const Packet& packet, bool reliable);
