@@ -9,6 +9,13 @@
 #include <enet.h>
 #include <server.h>
 
+// Base class for the Host_Client and Server to use. This class will
+// initialise enet and create the relevant server/client type depending
+// on the templated parameter for it. It will also handle the message 
+// creation and parsing for the generated game messages. The tick
+// function takes in a callback so the server/client and process them
+// individually.
+
 template <typename Host_Type>
 class Game_Host {
 public:
