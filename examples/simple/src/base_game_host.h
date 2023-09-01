@@ -152,26 +152,6 @@ public:
 		return std::move(create_packet_from_builder());
 	}
 
-	Packet create_player_moved(float x, float y) {
-		m_host_type->get_logger()->info("Sending player moved ({},{}) request", x, y);
-
-		m_builder.Clear();
-		auto player_moved = CreatePlayerMoved(m_builder, Game::CreateVec2(m_builder, x, y));
-		auto message = Game::CreateMessage(m_builder, Game::Any_PlayerMoved, player_moved.Union());
-		m_builder.Finish(message);
-		return std::move(create_packet_from_builder());
-	}
-
-	Packet create_ball_moved(float x, float y) {
-		m_host_type->get_logger()->info("Sending ball moved ({},{}) request", x, y);
-
-		m_builder.Clear();
-		auto ball_moved = CreateBallMoved(m_builder, Game::CreateVec2(m_builder, x, y));
-		auto message = Game::CreateMessage(m_builder, Game::Any_BallMoved, ball_moved.Union());
-		m_builder.Finish(message);
-		return std::move(create_packet_from_builder());
-	}
-
 	Host_Type* get_host_type() {
 		return m_host_type;
 	}

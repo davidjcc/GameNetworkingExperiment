@@ -38,18 +38,6 @@ int main() {
 			const auto* client_msg = message->payload_as_ClientReady();
 		} break;
 
-		case Game::Any_PlayerMoved: {
-			const auto* client_msg = message->payload_as_PlayerMoved();
-			break;
-		}
-
-		case Game::Any_BallMoved: {
-			const auto* client_msg = message->payload_as_BallMoved();
-
-			server.get_logger()->info("Ball moved to: {}, {}", client_msg->pos()->x(), client_msg->pos()->y());
-			break;
-		}
-
 		default:
 			server.get_logger()->error("Unknown message type");
 		}
@@ -57,14 +45,6 @@ int main() {
 
 	while (1) {
 		server.tick();
-
-		// Once we have connected clients we can start
-		// sending them game updates.
-		if (!server->get_client_manager().empty()) {
-
-			Packet packet = server.create_ball_moved(10.0f, 20.0f);
-			server->broadcast_to_clients(packet, true);
-		}
 	}
 
 	return EXIT_SUCCESS;

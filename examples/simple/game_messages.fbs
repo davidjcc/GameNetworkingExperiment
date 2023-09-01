@@ -1,24 +1,9 @@
 namespace Game;
 
-table Vec2 {
-	x: float;
-	y: float;
-}
-
 table ClientConnectedRequest { }
 table ClientConnectedResponse { client_id: int; }
-
 table ClientDisconnected { }
-
 table ClientReady { }
-
-table PlayerMoved {
-	pos: Vec2;
-}
-
-table BallMoved {
-	pos: Vec2;
-}
 
 union Any {
 	ClientConnectedRequest,
@@ -27,9 +12,6 @@ union Any {
 	ClientDisconnected,
 
 	ClientReady,
-
-	PlayerMoved,
-	BallMoved
 }
 
 table Message {

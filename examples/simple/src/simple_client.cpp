@@ -51,18 +51,6 @@ int main() {
 			const auto* client_msg = message->payload_as_ClientReady();
 		} break;
 
-		case Game::Any_PlayerMoved: {
-			const auto* client_msg = message->payload_as_PlayerMoved();
-			break;
-		}
-
-		case Game::Any_BallMoved: {
-			const auto* client_msg = message->payload_as_BallMoved();
-
-			client.get_logger()->info("Ball moved to: {}, {}", client_msg->pos()->x(), client_msg->pos()->y());
-			break;
-		}
-
 		default:
 			client.get_logger()->error("Unknown message type");
 		}
