@@ -1,0 +1,22 @@
+namespace Game;
+
+table ClientConnectedRequest { }
+table ClientConnectedResponse { client_id: int; }
+table ClientDisconnected { }
+table ClientReady { }
+
+union Any {
+	ClientConnectedRequest,
+	ClientConnectedResponse,
+
+	ClientDisconnected,
+
+	ClientReady,
+}
+
+table Message {
+	payload: Any;
+}
+
+root_type Message;
+

@@ -1,4 +1,6 @@
+
 #include "server.h"
+
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/rotating_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
@@ -9,6 +11,8 @@
 
 #include "config.h"
 #include "base_game_host.h"
+
+#include "raylib.h"
 
 int main() {
 	Game_Host<Host_Client> client(
@@ -56,10 +60,27 @@ int main() {
 
 		});
 
-	while (true) {
-		client.tick(0);
+	const int screenWidth = 800;
+	const int screenHeight = 450;
 
+	InitWindow(screenWidth, screenHeight, "raylib [core] example - basic window");
+
+	SetTargetFPS(60);
+
+	while (!WindowShouldClose())
+	{
+		client.tick();
+
+		BeginDrawing();
+
+		ClearBackground(RAYWHITE);
+
+		DrawText("Congrats! You created your first window!", 190, 200, 20, LIGHTGRAY);
+
+		EndDrawing();
 	}
+
+	CloseWindow();
 
 	return EXIT_SUCCESS;
 }

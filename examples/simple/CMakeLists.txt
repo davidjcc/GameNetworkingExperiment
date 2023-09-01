@@ -2,10 +2,11 @@ cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 
 project(SimpleExample)
 
-set(GENERATED_OUTPUT_DIR ${SimpleExample_SOURCE_DIR}/.generated)
+set(SOURCE_DIR ${SimpleExample_SOURCE_DIR})
+set(GENERATED_OUTPUT_DIR ${SOURCE_DIR}/.generated)
 
 set(FBS_FILES 
-	${SimpleExample_SOURCE_DIR}/game_messages.fbs
+	${SOURCE_DIR}/game_messages.fbs
 )
 
 set(GENERATED_FILES 
