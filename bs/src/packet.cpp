@@ -1,6 +1,8 @@
 #include "packet.h"
 #include "utils.h"
 
+#include <enet/enet.h>
+
 static Packet::Type get_type_from_enet_type(ENetEventType type) {
 	switch (type) {
 	case ENET_EVENT_TYPE_NONE: return Packet::NONE;
@@ -11,19 +13,19 @@ static Packet::Type get_type_from_enet_type(ENetEventType type) {
 	}
 }
 
-Packet::Packet(ENetPeer* peer, void* data, size_t data_length) : m_peer(peer) {
+Packet::Packet(_ENetPeer* peer, void* data, size_t data_length) : m_peer(peer) {
 	set_bytes(data, data_length);
 }
 
-Packet::Packet(const ENetEvent& event)
-	: m_peer(event.peer) {
-	if (event.packet && event.packet->dataLength > 0) {
-		m_bytes.assign(event.packet->data, event.packet->data + event.packet->dataLength);
+Packet::Packet(const _ENetEvent* event)
+	: m_peer(event->peer) {
+	if (event->packet && event->packet->dataLength > 0) {
+		m_bytes.assign(event->packet->data, event->packet->data + event->packet->dataLength);
 	}
-	m_type = get_type_from_enet_type(event.type);
+	m_type = get_type_from_enet_type(event->type);
 }
 
-Packet::Packet(ENetPeer* peer)
+Packet::Packet(_ENetPeer* peer)
 	: m_peer(peer) {
 }
 

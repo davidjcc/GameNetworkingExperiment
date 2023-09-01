@@ -1,5 +1,7 @@
 #include "enet.h"
 
+#include <enet/enet.h>
+
 ENet::ENet(logger_t& logger) : m_logger(logger)
 {
 	m_logger->info("Initialising ENet");

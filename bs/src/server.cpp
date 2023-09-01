@@ -21,10 +21,11 @@ Host_Server::~Host_Server() {
 }
 
 void Host_Server::start() {
-	enet_address_set_host(&m_address, m_host);
-	m_address.port = m_port;
+	ENetAddress address;
+	enet_address_set_host(&address, m_host);
+	address.port = m_port;
 
-	if (m_server = enet_host_create(&m_address, m_max_clients, 0, 0, 0); m_server == nullptr) {
+	if (m_server = enet_host_create(&address, m_max_clients, 0, 0, 0); m_server == nullptr) {
 		PANIC("An error occurred while trying to create an ENet server.");
 	}
 
@@ -47,7 +48,7 @@ void Host_Server::on_client_disconnect(Packet& packet) {
 void Host_Server::tick(uint32_t timeout_ms) {
 	ENetEvent enet_event{};
 	while (enet_host_service(m_server, &enet_event, timeout_ms) > 0) {
-		Packet packet(enet_event);
+		Packet packet(&enet_event);
 
 		// If there is a stored client attached to this peer then add that to the packet.
 		auto client = m_client_manager.get_client(enet_event.peer);

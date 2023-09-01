@@ -1,5 +1,7 @@
 #include "host_client.h"
 
+#include <enet/enet.h>
+
 Host_Client::Host_Client(logger_t& logger)
 	: Base_Client(-1, logger)
 {
@@ -43,7 +45,7 @@ void Host_Client::on_disconnect() {
 void Host_Client::tick(uint32_t timeout_ms) {
 	ENetEvent enet_event{};
 	while (enet_host_service(m_client, &enet_event, timeout_ms) > 0) {
-		Packet packet(enet_event);
+		Packet packet(&enet_event);
 		m_peer = enet_event.peer;
 
 		m_packets.push_front(packet);

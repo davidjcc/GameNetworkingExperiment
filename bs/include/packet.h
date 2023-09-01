@@ -1,13 +1,13 @@
 #pragma once
 
-#include <enet/enet.h>
-
 #include <string>
 #include <vector>
 #include <deque>
 #include <utility>
 
 #include "utils.h"
+
+#include "enet_fwd.h"
 
 class Packet {
 public:
@@ -18,14 +18,14 @@ public:
 		EVENT_RECIEVED,
 	};
 
-	Packet(const ENetEvent& event);
-	Packet(ENetPeer* peer);
-	Packet(ENetPeer* peer, void* data, size_t data_length);
+	Packet(const _ENetEvent* event);
+	Packet(_ENetPeer* peer);
+	Packet(_ENetPeer* peer, void* data, size_t data_length);
 	Packet() = default;
 	~Packet();
 
-	ENetPeer* get_peer() const { return m_peer; }
-	void set_peer(ENetPeer* peer) { m_peer = peer; }
+	_ENetPeer* get_peer() const { return m_peer; }
+	void set_peer(_ENetPeer* peer) { m_peer = peer; }
 
 	void set_client_id(int32_t id) { m_client_id = id; }
 
@@ -49,7 +49,7 @@ public:
 private:
 	int32_t m_client_id = -1;
 	Type m_type = NONE;
-	ENetPeer* m_peer = nullptr;
+	_ENetPeer* m_peer = nullptr;
 	std::vector<uint8_t> m_bytes;
 };
 

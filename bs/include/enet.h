@@ -1,5 +1,7 @@
 #pragma once
 
+#include <spdlog/logger.h>
+
 #include "server.h"
 #include "host_client.h"
 #include "packet.h"

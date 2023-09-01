@@ -2,7 +2,6 @@
 #include "utils.h"
 
 #include <spdlog/spdlog.h>
-#include <enet/enet.h>
 
 using client_id = int32_t;
 

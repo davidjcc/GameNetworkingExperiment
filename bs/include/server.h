@@ -1,5 +1,4 @@
 #pragma once
-#include <enet/enet.h>
 #include <spdlog/spdlog.h>
 
 #include <cstdint>
@@ -11,6 +10,7 @@
 #include "packet.h"
 #include "utils.h"
 
+#include "enet_fwd.h"
 
 class Host_Server {
 public:
@@ -40,8 +40,7 @@ private:
 	void on_client_connect(Packet& packet);
 	void on_client_disconnect(Packet& packet);
 
-	ENetHost* m_server = nullptr;
-	ENetAddress m_address{};
+	_ENetHost* m_server = nullptr;
 	logger_t m_logger;
 
 	const char* m_host;
