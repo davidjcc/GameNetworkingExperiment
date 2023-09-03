@@ -41,17 +41,17 @@ add_custom_command(
 add_custom_target(GeneratePongMessages DEPENDS ${GENERATED_FILES})
 
 function(pong_executable name entrypoint)
-	add_executable(${name} ${entrypoint} ${SERVER_SOURCES} ${ENET_SOURCES})
+	add_executable(${name} ${entrypoint} logic.cpp)
 	target_include_directories(${name} PRIVATE 
 		${CMAKE_SOURCE_DIR}/bs/include
+		${SOURCE_DIR}
 		${GENERATED_OUTPUT_DIR}
 	)
-	target_link_libraries(${name} PRIVATE bs fmt Ws2_32 winmm spdlog flatbuffers enet)
+	target_link_libraries(${name} PRIVATE bs fmt Ws2_32 winmm spdlog flatbuffers enet raylib)
 	add_dependencies(${name} GeneratePongMessages)
 endfunction()
 
-pong_executable(pong_client src/pong_client.cpp)
-target_link_libraries(pong_client PRIVATE raylib)
+pong_executable(pong_client client/pong_client.cpp)
 
-pong_executable(pong_server src/pong_server.cpp)
+pong_executable(pong_server server/pong_server.cpp)
 

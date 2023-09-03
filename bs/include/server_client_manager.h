@@ -27,6 +27,16 @@ public:
 		return nullptr;
 	}
 
+	auto get_connected_clients() const {
+		std::vector<server_client_ptr> clients;
+		for (auto& [_, client] : m_clients) {
+			if (client->get_state() == Base_Client::CONNECTED) {
+				clients.push_back(client);
+			}
+		}
+		return clients;
+	}
+
 	bool empty() const { return m_clients.empty(); }
 	bool size() const { return m_clients.size(); }
 

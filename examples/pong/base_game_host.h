@@ -121,11 +121,11 @@ public:
 		return std::move(create_packet_from_builder());
 	}
 
-	Packet create_client_connect_response(client_id id) {
+	Packet create_client_connect_response(client_id id, int tick_rate) {
 		m_host_type->get_logger()->info("Sending client connect response");
 
 		m_builder.Clear();
-		auto client_connected = Game::CreateClientConnectedResponse(m_builder, id);
+		auto client_connected = Game::CreateClientConnectedResponse(m_builder, id, tick_rate);
 		auto message = Game::CreateMessage(m_builder, Game::Any_ClientConnectedResponse, client_connected.Union());
 		m_builder.Finish(message);
 		return std::move(create_packet_from_builder());
@@ -142,15 +142,42 @@ public:
 		return std::move(create_packet_from_builder());
 	}
 
-	Packet create_client_ready() {
+	Packet create_client_ready(bool ready) {
 		m_host_type->get_logger()->info("Sending client ready request");
 
 		m_builder.Clear();
-		auto client_ready = Game::CreateClientReady(m_builder);
+		auto client_ready = Game::CreateClientReady(m_builder, ready);
 		auto message = Game::CreateMessage(m_builder, Game::Any_ClientReady, client_ready.Union());
 		m_builder.Finish(message);
 		return std::move(create_packet_from_builder());
 	}
+
+	Packet create_game_starting(float p1_x, float p1_y, float p2_x, float p2_y, float ball_px, float ball_py, float ball_vx, float ball_vy) {
+		m_host_type->get_logger()->info("Sending client ready request");
+
+		m_builder.Clear();
+		auto player_1 = Game::CreatePlayer(m_builder, Game::CreateVec2(m_builder, p1_x, p1_y));
+		auto player_2 = Game::CreatePlayer(m_builder, Game::CreateVec2(m_builder, p2_x, p2_y));
+		auto ball_pos = Game::CreateVec2(m_builder, ball_px, ball_py);
+		auto ball_vel = Game::CreateVec2(m_builder, ball_vx, ball_vy);
+
+		auto client_ready = Game::CreateGameStarting(m_builder, player_1, player_2, ball_pos, ball_vel);
+		auto message = Game::CreateMessage(m_builder, Game::Any_GameStarting, client_ready.Union());
+		m_builder.Finish(message);
+		return std::move(create_packet_from_builder());
+	}
+
+
+	Packet create_player_moved_message(int velocity) {
+		m_host_type->get_logger()->info("Sending player moved request");
+
+		m_builder.Clear();
+		auto client_ready = Game::CreatePlayerMoved(m_builder, velocity);
+		auto message = Game::CreateMessage(m_builder, Game::Any_PlayerMoved, client_ready.Union());
+		m_builder.Finish(message);
+		return std::move(create_packet_from_builder());
+	}
+
 
 	Host_Type* get_host_type() {
 		return m_host_type;

@@ -1,17 +1,50 @@
 namespace Game;
 
+table Vec2 {
+	x: float; y: float; 
+}
+
 table ClientConnectedRequest { }
-table ClientConnectedResponse { client_id: int; }
+table ClientConnectedResponse { 
+	client_id: int; 
+	tick_rate: int;
+}
 table ClientDisconnected { }
-table ClientReady { }
+table ClientReady { 
+	ready: bool;
+}
+
+table Player {
+	position: Vec2;
+}
+
+table GameStarting {
+	player_1: Player;
+	player_2: Player;
+
+	ball_position: Vec2;
+	ball_velocity: Vec2;
+}
+
+table PlayerMoved { 
+	velocity: int; 
+}
+
+table Tick {
+	player_1: Player;
+	player_2: Player;
+	ball_position: Vec2;
+	ball_velocity: Vec2;
+}
 
 union Any {
 	ClientConnectedRequest,
 	ClientConnectedResponse,
-
 	ClientDisconnected,
-
 	ClientReady,
+	GameStarting,
+	Tick,
+	PlayerMoved,
 }
 
 table Message {
