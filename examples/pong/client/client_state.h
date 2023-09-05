@@ -6,23 +6,24 @@ namespace Game {
 	struct Message;
 }
 
-class GameState {
+class Client_State {
 public:
 	enum State {
 		NONE = 0,
 		IN_GAME,
 		WAITING,
-		ENDED
+		ENDED,
+		DISCONNECTED
 	};
 
-	GameState();
+	Client_State();
 
 	void tick(float dt);
 	void draw();
 
 	void update(const Game::Message* message);
 
-	State set_state(const GameState::State& state) { m_state = state; }
+	State set_state(const Client_State::State& state) { m_state = state; }
 	State get_state() const { return m_state; }
 
 private:

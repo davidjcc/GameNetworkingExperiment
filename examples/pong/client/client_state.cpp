@@ -1,4 +1,4 @@
-#include "logic.h"
+#include "client_state.h"
 #include "game_messages_generated.h"
 #include "config.h"
 
@@ -9,7 +9,7 @@
 
 #include <raylib.h>
 
-GameState::GameState()
+Client_State::Client_State()
 	: m_client(spdlog::stdout_color_mt("CLIENT"), SAMPLES_HOST, SAMPLES_PORT)
 {
 	m_client.set_connect_callback([&] {
@@ -20,16 +20,14 @@ GameState::GameState()
 		});
 
 	m_client.set_disconnect_callback([&] {
+		m_state = DISCONNECTED;
 		});
 
 	m_client.set_tick_callback([&](const Game::Message* message, const Packet* packet) {
 		ASSERT_PANIC(m_client->get_state() == Base_Client::CONNECTED, "Not currently connected");
 
 		// We can now switch on the type returned and act accordingly.
-		auto type = message->payload_type();
-		m_client.get_logger()->info("Packet type is: {}", Game::EnumNameAny(type));
-
-		switch (type) {
+		switch (message->payload_type()) {
 		case Game::Any_ClientConnectedResponse: {
 			const auto* client_msg = message->payload_as_ClientConnectedResponse();
 			auto id = client_msg->client_id();
@@ -41,6 +39,13 @@ GameState::GameState()
 			m_server_tick_rate = client_msg->tick_rate();
 			break;
 		}
+
+		case Game::Any_ClientReadyResponse: {
+			const auto* client_msg = message->payload_as_ClientReadyResponse();
+			m_players[client_msg->slot()].isLocal = true;
+			break;
+		}
+
 
 		case Game::Any_ClientDisconnected: {
 			const auto* client_msg = message->payload_as_ClientDisconnected();
@@ -67,6 +72,35 @@ GameState::GameState()
 
 		} break;
 
+		case Game::Any_PlayerMoved: {
+			const auto* client_msg = message->payload_as_PlayerMoved();
+			m_players[client_msg->slot()].y += client_msg->velocity();
+
+			break;
+		}
+
+		case Game::Any_Tick: {
+			const auto* client_msg = message->payload_as_Tick();
+			const auto* player_1 = client_msg->player_1();
+			const auto* player_2 = client_msg->player_2();
+
+			auto update_player = [](Player& player, const Game::Player* player_msg) {
+				player.x = player_msg->position()->x();
+				player.y = player_msg->position()->y();
+				};
+
+			update_player(m_players[0], player_1);
+			update_player(m_players[1], player_2);
+
+			m_ball_x = client_msg->ball_position()->x();
+			m_ball_y = client_msg->ball_position()->y();
+			m_ball_vx = client_msg->ball_velocity()->x();
+			m_ball_vy = client_msg->ball_velocity()->y();
+
+
+			break;
+		}
+
 		default:
 			update(message);
 			break;
@@ -77,35 +111,46 @@ GameState::GameState()
 
 
 
-void GameState::tick(float dt) {
+void Client_State::tick(float dt) {
 	m_client.tick(m_server_tick_rate);
 
-	for (auto& player : m_players) {
-		if (!player.isLocal) {
-			continue;
-		}
+	switch (m_state) {
+	case IN_GAME: {
+		for (int i = 0; i < std::size(m_players); ++i) {
+			auto& player = m_players[i];
 
-		int velocity = 0;
-
-		if (IsKeyDown(KEY_W)) {
-			velocity = -PLAYER_SPEED;
-		}
-		else if (IsKeyDown(KEY_S)) {
-			velocity = PLAYER_SPEED;
-		}
-
-		// Send a player moved message.
-		if (velocity != 0) {
-			if (m_client.get_host_type()->get_state() == Base_Client::CONNECTED) {
-				m_client.create_player_moved_message(velocity).send(true);
+			if (!player.isLocal) {
+				continue;
 			}
 
-			player.y += velocity * dt;
+			int velocity = 0;
+			bool interacted = false;
+
+			if (IsKeyDown(KEY_W)) {
+				velocity = -PLAYER_SPEED;
+				interacted = true;
+			}
+			else if (IsKeyDown(KEY_S)) {
+				velocity = PLAYER_SPEED;
+				interacted = true;
+			}
+
+			// Send a player moved message.
+			if (interacted) {
+				if (m_client.get_host_type()->get_state() == Base_Client::CONNECTED) {
+					m_client.create_player_moved_message(i, velocity).send(true);
+				}
+
+				player.y += velocity * dt;
+			}
 		}
+
+		break;
+	}
 	}
 }
 
-void GameState::draw() {
+void Client_State::draw() {
 	BeginDrawing();
 	ClearBackground(BLACK);
 
@@ -121,20 +166,30 @@ void GameState::draw() {
 	}
 
 	case IN_GAME:
-		for (const auto& player : m_players) {
+		for (int i = 0; i < std::size(m_players); ++i) {
+			auto& player = m_players[i];
+
+			if (player.isLocal) {
+				DrawText(TextFormat("Slot ID: %d", i), 10, 10, 20, WHITE);
+			}
 			DrawRectangle((int)player.x, (int)player.y, PLAYER_WIDTH, PLAYER_HEIGHT, RAYWHITE);
 		}
 		DrawRectangle((int)m_ball_x, (int)m_ball_y, BALL_WIDTH, BALL_WIDTH, WHITE);
 		break;
 
 	case ENDED: break;
+
+	case DISCONNECTED: {
+		DrawText("Disconnected!", 10, 10, 20, WHITE);
+		break;
+	}
 	}
 
 
 	EndDrawing();
 }
 
-void GameState::update(const Game::Message* message) {
+void Client_State::update(const Game::Message* message) {
 	//ASSERT_PANIC(m_state == IN_GAME, "Trying to update the game state while not in game");
 	//ASSERT_PANIC(message->payload_type() == Game::Any_Tick, "Game state receieved message. Expected Game::Any_Tick but got: {}", Game::EnumNameAny(message->payload_type()));
 

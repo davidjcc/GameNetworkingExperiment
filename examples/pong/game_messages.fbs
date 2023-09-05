@@ -14,6 +14,10 @@ table ClientReady {
 	ready: bool;
 }
 
+table ClientReadyResponse {
+	slot: int;
+}
+
 table Player {
 	position: Vec2;
 }
@@ -27,6 +31,7 @@ table GameStarting {
 }
 
 table PlayerMoved { 
+	slot: int;
 	velocity: int; 
 }
 
@@ -42,6 +47,7 @@ union Any {
 	ClientConnectedResponse,
 	ClientDisconnected,
 	ClientReady,
+	ClientReadyResponse,
 	GameStarting,
 	Tick,
 	PlayerMoved,

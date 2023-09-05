@@ -2,10 +2,10 @@
 #include <raylib.h>
 
 #include "config.h"
-#include "logic.h"
+#include "client_state.h"
 
 int main() {
-	GameState state{};
+	Client_State state{};
 	InitWindow(WIDTH, HEIGHT, "Pong");
 
 	SetTargetFPS(60);

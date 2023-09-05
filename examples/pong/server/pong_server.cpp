@@ -29,6 +29,21 @@ float ball_vy = 0.0f;
 static Player players[2] = {};
 bool game_started = false;
 
+enum Game_State {
+	WAITING = 0,
+	PLAYING,
+	ENDED,
+};
+const char* GameStateToString(Game_State& s) {
+	switch (s) {
+	case Game_State::WAITING: return "WAITING";
+	case Game_State::PLAYING: return "PLAYING";
+	case Game_State::ENDED: return "ENDED";
+	default: return "UNKNOWN";
+	}
+}
+Game_State gameState = WAITING;
+
 int main() {
 	auto logger = spdlog::stdout_color_mt("SERVER");
 
@@ -62,15 +77,26 @@ int main() {
 
 		case Game::Any_ClientReady: {
 			const auto* client_msg = message->payload_as_ClientReady();
-			for (auto& player : players) {
+			for (size_t i = 0; i < std::size(players); ++i) {
+				auto& player = players[i];
+
 				if (player.id == packet->get_client_id()) {
 					player.ready = client_msg->ready();
-					server.get_logger()->info("Client {} is ready: {}", packet->get_client_id(), player.ready);
+					server.get_logger()->trace("Client {} is ready: {}", packet->get_client_id(), player.ready);
 
+					if (player.ready) {
+						Packet response = server.create_client_ready_response((int)i);
+						response.set_peer(packet->get_peer());
+						response.send(true);
+					}
+
+					break;
 				}
 			}
 
+			// Once all players have readied up, start the game.
 			if (players[0].ready && players[1].ready) {
+				gameState = PLAYING;
 				server.get_logger()->info("All players are ready starting game...");
 
 				game_started = true;
@@ -91,6 +117,22 @@ int main() {
 			}
 		} break;
 
+		case Game::Any_PlayerMoved: {
+			const auto* player_msg = message->payload_as_PlayerMoved();
+			const auto slot = player_msg->slot();
+
+			server.get_logger()->trace("Player moved receieved for {}: Vel: {}", slot, player_msg->velocity());
+
+			if (slot >= 0 && slot < std::size(players)) {
+				auto& player = players[slot];
+				player.y += player_msg->velocity();
+			}
+			else {
+				server.get_logger()->error("Invalid player slot: {}", slot);
+			}
+			break;
+		}
+
 		default:
 			server.get_logger()->error("Unknown message type");
 		}
@@ -98,8 +140,17 @@ int main() {
 
 	InitWindow(300, 300, "PongServer");
 
-	while (1) {
-		server.tick(TICK_RATE);
+	// NOTE(DC): This will also control the server's tick rate.
+	SetTargetFPS(60);
+
+	while (!WindowShouldClose()) {
+		server.tick(0);
+
+		if (gameState == PLAYING) {
+			// Send out the game state to all the clients.
+			Packet tick_packet = server.create_tick(players[0].x, players[0].y, players[1].x, players[1].y, ball_x, ball_y, ball_vx, ball_vy);
+			server.get_host_type()->broadcast_to_clients(tick_packet, true);
+		}
 
 		BeginDrawing();
 
@@ -118,6 +169,16 @@ int main() {
 		auto connected_clients = server.get_host_type()->get_client_manager().get_connected_clients();
 		for (auto& client : connected_clients) {
 			DrawText(TextFormat("Client %d: %s", client->get_id(), client->get_state() == Base_Client::CONNECTED ? "Connected" : "Disconnected"), x, y += 20, 10, WHITE);
+		}
+
+		DrawText(TextFormat("Game State %s", GameStateToString(gameState)), x, y += 20, 10, WHITE);
+		switch (gameState) {
+		case PLAYING: {
+			for (auto& player : players) {
+				DrawText(TextFormat("Player %d: Pos: %f, %f", player.id, player.x, player.y), x, y += 20, 10, WHITE);
+			}
+			break;
+		}
 		}
 
 		ClearBackground(BLACK);
