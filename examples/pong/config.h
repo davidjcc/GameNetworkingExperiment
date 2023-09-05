@@ -10,6 +10,6 @@
 
 #define PLAYER_WIDTH 10 
 #define PLAYER_HEIGHT 60 
-#define PLAYER_SPEED 1 
+#define PLAYER_SPEED 5 
 #define BALL_WIDTH 10 
 

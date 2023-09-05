@@ -189,12 +189,12 @@ public:
 		return std::move(create_packet_from_builder());
 	}
 
-	Packet create_tick(float p1_x, float p1_y, float p2_x, float p2_y, float ball_px, float ball_py, float ball_vx, float ball_vy) {
+	Packet create_tick(float p1_x, float p1_y, float p2_x, float p2_y, float ball_px, float ball_py, float ball_vx, float ball_vy, int player_1_score, int player_2_score) {
 		m_host_type->get_logger()->trace("Sending tick request");
 
 		m_builder.Clear();
-		auto player_1 = Game::CreatePlayer(m_builder, Game::CreateVec2(m_builder, p1_x, p1_y));
-		auto player_2 = Game::CreatePlayer(m_builder, Game::CreateVec2(m_builder, p2_x, p2_y));
+		auto player_1 = Game::CreatePlayer(m_builder, Game::CreateVec2(m_builder, p1_x, p1_y), player_1_score);
+		auto player_2 = Game::CreatePlayer(m_builder, Game::CreateVec2(m_builder, p2_x, p2_y), player_2_score);
 		auto ball_pos = Game::CreateVec2(m_builder, ball_px, ball_py);
 		auto ball_vel = Game::CreateVec2(m_builder, ball_vx, ball_vy);
 

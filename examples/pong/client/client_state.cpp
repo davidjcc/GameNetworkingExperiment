@@ -170,11 +170,14 @@ void Client_State::draw() {
 			auto& player = m_players[i];
 
 			if (player.isLocal) {
-				DrawText(TextFormat("Slot ID: %d", i), 10, 10, 20, WHITE);
+				DrawText(TextFormat("Slot ID: %d", i), 10, 10, 10, WHITE);
 			}
 			DrawRectangle((int)player.x, (int)player.y, PLAYER_WIDTH, PLAYER_HEIGHT, RAYWHITE);
 		}
 		DrawRectangle((int)m_ball_x, (int)m_ball_y, BALL_WIDTH, BALL_WIDTH, WHITE);
+
+		DrawText(TextFormat("%d", m_players[0].score), 10, HEIGHT - 30, 20, WHITE);
+		DrawText(TextFormat("%d", m_players[1].score), WIDTH - 30, HEIGHT - 30, 20, WHITE);
 		break;
 
 	case ENDED: break;

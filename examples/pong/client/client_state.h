@@ -33,6 +33,7 @@ private:
 		bool ready = false;
 
 		bool isLocal = false;
+		int score = 0;
 	} m_players[2];
 
 	float m_ball_x = 0.0f;

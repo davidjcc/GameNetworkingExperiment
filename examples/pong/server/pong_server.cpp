@@ -20,6 +20,7 @@ struct Player {
 	float x = 0.0f;
 	float y = 0.0f;
 	bool ready = false;
+	int score = 0;
 };
 float ball_x = 0.0f;
 float ball_y = 0.0f;
@@ -33,6 +34,7 @@ enum Game_State {
 	WAITING = 0,
 	PLAYING,
 	ENDED,
+	DISCONNECTED,
 };
 const char* GameStateToString(Game_State& s) {
 	switch (s) {
@@ -44,10 +46,48 @@ const char* GameStateToString(Game_State& s) {
 }
 Game_State gameState = WAITING;
 
+void game_state_tick() {
+	for (auto& player : players) {
+		if (player.y < 0) {
+			player.y = 0;
+		}
+
+		if (player.y + PLAYER_HEIGHT > HEIGHT) {
+			player.y = HEIGHT - PLAYER_HEIGHT;
+		}
+
+		ball_x += ball_vx;
+		ball_y += ball_vy;
+
+		if (ball_y < 0) {
+			ball_vy *= -1;
+		}
+
+		if (ball_y + BALL_WIDTH > HEIGHT) {
+			ball_vy *= -1;
+		}
+
+		if (ball_x < 0 || ball_x + BALL_WIDTH > WIDTH) {
+			ball_x = WIDTH / 2.0f;
+			ball_y = HEIGHT / 2.0f;
+			ball_vx = 1;
+		}
+
+
+		if (CheckCollisionRecs({ ball_x, ball_y, BALL_WIDTH, BALL_WIDTH }, { player.x, player.y, PLAYER_WIDTH, PLAYER_HEIGHT })) {
+			ball_vx *= -1.08f;
+		}
+	}
+}
+
 int main() {
 	auto logger = spdlog::stdout_color_mt("SERVER");
 
 	auto server = Game_Host<Host_Server>(logger, SAMPLES_HOST, SAMPLES_PORT);
+
+	server.set_disconnect_callback([&] {
+		gameState = DISCONNECTED;
+		});
 
 	server.set_tick_callback([&](const Game::Message* message, const Packet* packet) {
 		auto type = message->payload_type();
@@ -112,6 +152,9 @@ int main() {
 				ball_x = WIDTH / 2.0f;
 				ball_y = HEIGHT / 2.0f;
 
+				ball_vx = 1.0f;
+				ball_vy = 1.0f;
+
 				Packet start_packet = server.create_game_starting(player_1.x, player_1.y, player_2.x, player_2.y, ball_x, ball_y, ball_vx, ball_vy);
 				server.get_host_type()->broadcast_to_clients(start_packet, true);
 			}
@@ -148,7 +191,7 @@ int main() {
 
 		if (gameState == PLAYING) {
 			// Send out the game state to all the clients.
-			Packet tick_packet = server.create_tick(players[0].x, players[0].y, players[1].x, players[1].y, ball_x, ball_y, ball_vx, ball_vy);
+			Packet tick_packet = server.create_tick(players[0].x, players[0].y, players[1].x, players[1].y, ball_x, ball_y, ball_vx, ball_vy, players[0].score, players[1].score);
 			server.get_host_type()->broadcast_to_clients(tick_packet, true);
 		}
 
@@ -173,9 +216,16 @@ int main() {
 
 		DrawText(TextFormat("Game State %s", GameStateToString(gameState)), x, y += 20, 10, WHITE);
 		switch (gameState) {
+		case DISCONNECTED:
 		case PLAYING: {
 			for (auto& player : players) {
 				DrawText(TextFormat("Player %d: Pos: %f, %f", player.id, player.x, player.y), x, y += 20, 10, WHITE);
+			}
+			DrawText(TextFormat("Ball: Pos: %.2f, %.2f", ball_x, ball_y), x, y += 20, 10, WHITE);
+			DrawText(TextFormat("Ball: Vel: %.2f, %f Vel: %.2f, %f", ball_vx, ball_vy), x, y += 20, 10, WHITE);
+
+			if (gameState != DISCONNECTED) {
+				game_state_tick();
 			}
 			break;
 		}

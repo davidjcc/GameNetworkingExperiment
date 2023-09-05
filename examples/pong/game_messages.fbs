@@ -20,6 +20,7 @@ table ClientReadyResponse {
 
 table Player {
 	position: Vec2;
+	score: int;
 }
 
 table GameStarting {
