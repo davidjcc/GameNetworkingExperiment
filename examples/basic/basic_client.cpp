@@ -37,6 +37,5 @@ int main() {
 		}
 	}
 
-	enet.destroy_client(client);
 	return 0;
 }

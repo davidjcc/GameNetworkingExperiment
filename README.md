@@ -55,7 +55,6 @@ int main() {
 		}
 	}
 
-	enet.destroy_server(server);
 	return 0;
 }
 
@@ -102,7 +101,6 @@ int main() {
 		}
 	}
 
-	enet.destroy_client(client);
 	return 0;
 }
 ```

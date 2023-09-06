@@ -27,5 +27,10 @@ private:
 	} m_state = STATE_UNINITIALISED;
 
 	logger_t m_logger;
+
+	// Keep track of all the created hosts so we can destroy them when the ENet object is destroyed.
+	Host_Server* m_server = nullptr;
+	std::vector<Host_Client*> m_clients;
+
 };
 
