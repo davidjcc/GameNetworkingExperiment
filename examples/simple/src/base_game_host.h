@@ -5,8 +5,8 @@
 #include "game_messages_generated.h"
 #include "config.h"
 
-#include <enet.h>
-#include <server.h>
+#include <bs/enet.h>
+#include <bs/server.h>
 
 // Base class for the Host_Client and Server to use. This class will
 // initialise enet and create the relevant server/client type depending

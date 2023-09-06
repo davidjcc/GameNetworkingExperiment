@@ -1,4 +1,4 @@
-#include "enet.h"
+#include "bs/enet.h"
 
 #include <enet/enet.h>
 

@@ -1,5 +1,5 @@
-#include "server_client_manager.h"
-#include "server_client.h"
+#include "bs/server_client_manager.h"
+#include "bs/server_client.h"
 
 #include <enet/enet.h>
 

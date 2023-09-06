@@ -1,5 +1,5 @@
-#include "packet.h"
-#include "utils.h"
+#include "bs/packet.h"
+#include "bs/utils.h"
 
 #include <enet/enet.h>
 

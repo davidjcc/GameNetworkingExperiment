@@ -1,10 +1,10 @@
-#include "server.h"
+#include <bs/server.h>
+
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/rotating_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <thread>
 
-#include "enet.h"
 #include "game_messages_generated.h"
 
 #include "config.h"

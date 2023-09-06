@@ -1,4 +1,4 @@
-#include "server.h"
+#include "bs/server.h"
 
 #include <spdlog/spdlog.h>
 #include <enet/enet.h>
@@ -8,8 +8,8 @@
 #include <iostream>
 #include <list>
 
-#include "utils.h"
-#include "packet.h"
+#include "bs/utils.h"
+#include "bs/packet.h"
 
 Host_Server::Host_Server(const char* host, int32_t port, int32_t max_clients, logger_t& logger)
 	: m_host(host), m_port(port), m_max_clients(max_clients), m_logger(logger), m_client_manager(logger)
