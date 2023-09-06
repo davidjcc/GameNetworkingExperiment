@@ -23,10 +23,10 @@ The samples use the `flatbuffers` library to serialize data. There is a pre-buil
 int main() {
 	// Create the main ENet object.
 	auto logger = spdlog::stdout_color_mt("SERVER");
-	ENet enet(logger);
+	bs::ENet enet(logger);
 
 	// Create the server.
-	Host_Server* server = enet.create_server("127.0.0.1", 1234, 1);
+	bs::Host_Server* server = enet.create_server("127.0.0.1", 1234, 1);
 
 	// Start the server running.
 	server->start();
@@ -40,19 +40,19 @@ int main() {
 		while (!packets.empty()) {
 			auto packet = packets.pop_front();
 			switch (packet.get_type()) {
-			case Packet::NONE: break;
+			case bs::Packet::NONE: break;
 
-			case Packet::CONNECT: {
+			case bs::Packet::CONNECT: {
 				server->get_logger()->info("Client connected");
 				break;
 			}
 
-			case Packet::DISCONNECT: {
+			case bs::Packet::DISCONNECT: {
 				server->get_logger()->info("Client disconnected");
 				break;
 			}
 
-			case Packet::EVENT_RECIEVED: {
+			case bs::Packet::EVENT_RECIEVED: {
 				server->get_logger()->info("Packet recieved");
 				break;
 			}
@@ -71,41 +71,45 @@ int main() {
 #include <spdlog/sinks/stdout_color_sinks.h>
 
 int main() {
-	auto logger = spdlog::stdout_color_mt("SERVER");
+	// Create the main enet object.
+	auto logger = spdlog::stdout_color_mt("CLIENT");
+	bs::ENet enet(logger);
 
-	ENet enet(logger);
+	// Create the client.
+	bs::Host_Client* client = enet.create_host_client();
 
-	Host_Server* server = enet.create_server("127.0.0.1", 1234, 1);
-	server->start();
+	// Start the client running and connect to the server.
+	client->start("127.0.0.1", 1234);
 
 	while (1) {
-		server->tick(0);
+		// Update the client's packets (if there are any).
+		client->tick(0);
 
-		auto& packets = server->get_packets();
+		// Process the packets.
+		auto& packets = client->get_packets();
 		while (!packets.empty()) {
 			auto packet = packets.pop_front();
 			switch (packet.get_type()) {
-			case Packet::NONE: break;
+			case bs::Packet::NONE: break;
 
-			case Packet::CONNECT: {
-				server->get_logger()->info("Client connected");
+			case bs::Packet::CONNECT: {
+				client->get_logger()->info("Connected to server");
 				break;
 			}
 
-			case Packet::DISCONNECT: {
-				server->get_logger()->info("Client disconnected");
+			case bs::Packet::DISCONNECT: {
+				client->get_logger()->info("Disconnected from serve");
 				break;
 			}
 
-			case Packet::EVENT_RECIEVED: {
-				server->get_logger()->info("Packet recieved");
+			case bs::Packet::EVENT_RECIEVED: {
+				client->get_logger()->info("Packet recieved");
 				break;
 			}
 			}
 		}
 	}
 
-	enet.destroy_server(server);
 	return 0;
 }
 ```
