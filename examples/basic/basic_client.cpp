@@ -5,10 +5,10 @@
 int main() {
 	// Create the main enet object.
 	auto logger = spdlog::stdout_color_mt("CLIENT");
-	ENet enet(logger);
+	bs::ENet enet(logger);
 
 	// Create the client.
-	Host_Client* client = enet.create_host_client();
+	bs::Host_Client* client = enet.create_host_client();
 
 	// Start the client running and connect to the server.
 	client->start("127.0.0.1", 1234);
@@ -22,19 +22,19 @@ int main() {
 		while (!packets.empty()) {
 			auto packet = packets.pop_front();
 			switch (packet.get_type()) {
-			case Packet::NONE: break;
+			case bs::Packet::NONE: break;
 
-			case Packet::CONNECT: {
+			case bs::Packet::CONNECT: {
 				client->get_logger()->info("Connected to server");
 				break;
 			}
 
-			case Packet::DISCONNECT: {
+			case bs::Packet::DISCONNECT: {
 				client->get_logger()->info("Disconnected from serve");
 				break;
 			}
 
-			case Packet::EVENT_RECIEVED: {
+			case bs::Packet::EVENT_RECIEVED: {
 				client->get_logger()->info("Packet recieved");
 				break;
 			}

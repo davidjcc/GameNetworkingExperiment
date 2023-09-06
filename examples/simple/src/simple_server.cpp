@@ -14,9 +14,9 @@
 int main() {
 	auto logger = spdlog::stdout_color_mt("SERVER");
 
-	auto server = Game_Host<Host_Server>(logger, SAMPLES_HOST, SAMPLES_PORT);
+	auto server = Game_Host<bs::Host_Server>(logger, SAMPLES_HOST, SAMPLES_PORT);
 
-	server.set_tick_callback([&](const Game::Message* message, const Packet* packet) {
+	server.set_tick_callback([&](const Game::Message* message, const bs::Packet* packet) {
 		auto type = message->payload_type();
 
 		switch (type) {
@@ -25,7 +25,7 @@ int main() {
 
 			auto client = server.get_host_type()->get_client_manager().get_client(packet->get_peer());
 
-			Packet packet = server.create_client_connect_response(client->get_id());
+			bs::Packet packet = server.create_client_connect_response(client->get_id());
 			packet.set_peer(client->get_peer());
 			packet.send(true);
 			break;

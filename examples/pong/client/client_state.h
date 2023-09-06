@@ -44,7 +44,7 @@ private:
 	State m_state = WAITING;
 	bool m_ready = false;
 
-	Game_Host<Host_Client> m_client;
+	Game_Host<bs::Host_Client> m_client;
 
 	// Server tick rate is set once the server replies with a 
 	// client ready response.

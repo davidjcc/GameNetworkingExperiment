@@ -9,45 +9,46 @@
 
 #include "enet_fwd.h"
 
-class Server_Client_Manager {
-public:
-	NO_COPY_NO_MOVE(Server_Client_Manager);
+namespace bs {
+	class Server_Client_Manager {
+	public:
+		NO_COPY_NO_MOVE(Server_Client_Manager);
 
-	Server_Client_Manager(logger_t& logger)
-		: m_logger(logger) {}
+		Server_Client_Manager(logger_t& logger)
+			: m_logger(logger) {}
 
-	server_client_ptr add_client(_ENetPeer* peer);
-	void disconnect_client(const _ENetPeer* peer);
+		server_client_ptr add_client(_ENetPeer* peer);
+		void disconnect_client(const _ENetPeer* peer);
 
-	server_client_ptr get_client(_ENetPeer* peer) {
-		if (m_clients.find(peer) != m_clients.end()) {
-			return m_clients[peer];
-		}
-
-		return nullptr;
-	}
-
-	auto get_connected_clients() const {
-		std::vector<server_client_ptr> clients;
-		for (auto& [_, client] : m_clients) {
-			if (client->get_state() == Base_Client::CONNECTED) {
-				clients.push_back(client);
+		server_client_ptr get_client(_ENetPeer* peer) {
+			if (m_clients.find(peer) != m_clients.end()) {
+				return m_clients[peer];
 			}
+
+			return nullptr;
 		}
-		return clients;
-	}
 
-	bool empty() const { return m_clients.empty(); }
-	bool size() const { return m_clients.size(); }
+		auto get_connected_clients() const {
+			std::vector<server_client_ptr> clients;
+			for (auto& [_, client] : m_clients) {
+				if (client->get_state() == Base_Client::CONNECTED) {
+					clients.push_back(client);
+				}
+			}
+			return clients;
+		}
 
-	void broadcast_to_clients(const Packet& packet, bool reliable);
-	void broadcast_to_client(server_client_ptr& client, const Packet& packet, bool reliable);
-	void broadcast_to_client(client_id& id, const Packet& packet, bool reliable);
-private:
-	void send(server_client_ptr client, _ENetPacket* packet);
-	_ENetPacket* create_enet_packet(const Packet& packet, bool reliable);
+		bool empty() const { return m_clients.empty(); }
+		bool size() const { return m_clients.size(); }
 
-	std::unordered_map<_ENetPeer*, server_client_ptr> m_clients;
-	logger_t m_logger;
-};
+		void broadcast_to_clients(const Packet& packet, bool reliable);
+		void broadcast_to_client(server_client_ptr& client, const Packet& packet, bool reliable);
+		void broadcast_to_client(client_id& id, const Packet& packet, bool reliable);
+	private:
+		void send(server_client_ptr client, _ENetPacket* packet);
+		_ENetPacket* create_enet_packet(const Packet& packet, bool reliable);
 
+		std::unordered_map<_ENetPeer*, server_client_ptr> m_clients;
+		logger_t m_logger;
+	};
+}

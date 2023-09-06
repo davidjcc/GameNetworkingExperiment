@@ -83,13 +83,13 @@ void game_state_tick() {
 int main() {
 	auto logger = spdlog::stdout_color_mt("SERVER");
 
-	auto server = Game_Host<Host_Server>(logger, SAMPLES_HOST, SAMPLES_PORT);
+	auto server = Game_Host<bs::Host_Server>(logger, SAMPLES_HOST, SAMPLES_PORT);
 
 	server.set_disconnect_callback([&] {
 		gameState = DISCONNECTED;
 		});
 
-	server.set_tick_callback([&](const Game::Message* message, const Packet* packet) {
+	server.set_tick_callback([&](const Game::Message* message, const bs::Packet* packet) {
 		auto type = message->payload_type();
 
 		switch (type) {
@@ -105,7 +105,7 @@ int main() {
 
 			auto client = server.get_host_type()->get_client_manager().get_client(packet->get_peer());
 
-			Packet packet = server.create_client_connect_response(client->get_id(), TICK_RATE);
+			bs::Packet packet = server.create_client_connect_response(client->get_id(), TICK_RATE);
 			packet.set_peer(client->get_peer());
 			packet.send(true);
 			break;
@@ -125,7 +125,7 @@ int main() {
 					server.get_logger()->trace("Client {} is ready: {}", packet->get_client_id(), player.ready);
 
 					if (player.ready) {
-						Packet response = server.create_client_ready_response((int)i);
+						bs::Packet response = server.create_client_ready_response((int)i);
 						response.set_peer(packet->get_peer());
 						response.send(true);
 					}
@@ -155,7 +155,7 @@ int main() {
 				ball_vx = 1.0f;
 				ball_vy = 1.0f;
 
-				Packet start_packet = server.create_game_starting(player_1.x, player_1.y, player_2.x, player_2.y, ball_x, ball_y, ball_vx, ball_vy);
+				bs::Packet start_packet = server.create_game_starting(player_1.x, player_1.y, player_2.x, player_2.y, ball_x, ball_y, ball_vx, ball_vy);
 				server.get_host_type()->broadcast_to_clients(start_packet, true);
 			}
 		} break;
@@ -191,7 +191,7 @@ int main() {
 
 		if (gameState == PLAYING) {
 			// Send out the game state to all the clients.
-			Packet tick_packet = server.create_tick(players[0].x, players[0].y, players[1].x, players[1].y, ball_x, ball_y, ball_vx, ball_vy, players[0].score, players[1].score);
+			bs::Packet tick_packet = server.create_tick(players[0].x, players[0].y, players[1].x, players[1].y, ball_x, ball_y, ball_vx, ball_vy, players[0].score, players[1].score);
 			server.get_host_type()->broadcast_to_clients(tick_packet, true);
 		}
 
@@ -211,7 +211,7 @@ int main() {
 
 		auto connected_clients = server.get_host_type()->get_client_manager().get_connected_clients();
 		for (auto& client : connected_clients) {
-			DrawText(TextFormat("Client %d: %s", client->get_id(), client->get_state() == Base_Client::CONNECTED ? "Connected" : "Disconnected"), x, y += 20, 10, WHITE);
+			DrawText(TextFormat("Client %d: %s", client->get_id(), client->get_state() == bs::Base_Client::CONNECTED ? "Connected" : "Disconnected"), x, y += 20, 10, WHITE);
 		}
 
 		DrawText(TextFormat("Game State %s", GameStateToString(gameState)), x, y += 20, 10, WHITE);

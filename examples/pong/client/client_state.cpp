@@ -23,8 +23,8 @@ Client_State::Client_State()
 		m_state = DISCONNECTED;
 		});
 
-	m_client.set_tick_callback([&](const Game::Message* message, const Packet* packet) {
-		ASSERT_PANIC(m_client->get_state() == Base_Client::CONNECTED, "Not currently connected");
+	m_client.set_tick_callback([&](const Game::Message* message, const bs::Packet* packet) {
+		ASSERT_PANIC(m_client->get_state() == bs::Base_Client::CONNECTED, "Not currently connected");
 
 		// We can now switch on the type returned and act accordingly.
 		switch (message->payload_type()) {
@@ -137,7 +137,7 @@ void Client_State::tick(float dt) {
 
 			// Send a player moved message.
 			if (interacted) {
-				if (m_client.get_host_type()->get_state() == Base_Client::CONNECTED) {
+				if (m_client.get_host_type()->get_state() == bs::Base_Client::CONNECTED) {
 					m_client.create_player_moved_message(i, velocity).send(true);
 				}
 

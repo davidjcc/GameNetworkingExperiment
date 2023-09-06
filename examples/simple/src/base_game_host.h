@@ -18,21 +18,21 @@
 template <typename Host_Type>
 class Game_Host {
 public:
-	using tick_cb_t = std::function<void(const Game::Message*, const Packet* packet)>;
+	using tick_cb_t = std::function<void(const Game::Message*, const bs::Packet* packet)>;
 	using connect_cb_t = std::function<void()>;
 
-	Game_Host(logger_t logger, const char* host, int32_t port)
+	Game_Host(bs::logger_t logger, const char* host, int32_t port)
 		: m_enet(logger)
 		, m_host(host)
 		, m_port(port)
 	{
 
 		// TODO(DC): Make the init/start api the same for both client and server.
-		if constexpr (std::is_same_v<Host_Type, Host_Server>) {
+		if constexpr (std::is_same_v<Host_Type, bs::Host_Server>) {
 			m_host_type = m_enet.create_server(host, port, 32);
 			m_host_type->start();
 		}
-		else if constexpr (std::is_same_v<Host_Type, Host_Client>) {
+		else if constexpr (std::is_same_v<Host_Type, bs::Host_Client>) {
 			m_host_type = m_enet.create_host_client();
 			m_host_type->start(host, port);
 		}
@@ -40,10 +40,10 @@ public:
 	}
 
 	~Game_Host() {
-		if constexpr (std::is_same_v<Host_Type, Host_Server>) {
+		if constexpr (std::is_same_v<Host_Type, bs::Host_Server>) {
 			m_enet.destroy_server(m_host_type);
 		}
-		else if constexpr (std::is_same_v<Host_Type, Host_Client>) {
+		else if constexpr (std::is_same_v<Host_Type, bs::Host_Client>) {
 			m_enet.destroy_client(m_host_type);
 		}
 
@@ -53,7 +53,7 @@ public:
 		return m_host_type;
 	}
 
-	logger_t get_logger() {
+	bs::logger_t get_logger() {
 		if (m_host_type)
 			return m_host_type->get_logger();
 
@@ -81,16 +81,16 @@ public:
 		while (!packets.empty()) {
 			auto packet = packets.pop_front();
 			switch (packet.get_type()) {
-			case Packet::CONNECT:
+			case bs::Packet::CONNECT:
 				if (m_connect_callback)
 					m_connect_callback();
 				break;
-			case Packet::DISCONNECT:
+			case bs::Packet::DISCONNECT:
 				if (m_disconnect_callback)
 					m_disconnect_callback();
 				break;
 
-			case Packet::EVENT_RECIEVED:
+			case bs::Packet::EVENT_RECIEVED:
 				if (m_tick_callback) {
 					auto packet_bytes = packet.get_bytes();
 
@@ -111,7 +111,7 @@ public:
 		}
 	}
 
-	Packet create_client_connect_request() {
+	bs::Packet create_client_connect_request() {
 		m_host_type->get_logger()->info("Sending client connect request");
 
 		m_builder.Clear();
@@ -121,7 +121,7 @@ public:
 		return std::move(create_packet_from_builder());
 	}
 
-	Packet create_client_connect_response(client_id id) {
+	bs::Packet create_client_connect_response(bs::client_id id) {
 		m_host_type->get_logger()->info("Sending client connect response");
 
 		m_builder.Clear();
@@ -131,8 +131,7 @@ public:
 		return std::move(create_packet_from_builder());
 	}
 
-
-	Packet create_client_disconnect() {
+	bs::Packet create_client_disconnect() {
 		m_host_type->get_logger()->info("Sending client disconnect request");
 
 		m_builder.Clear();
@@ -142,7 +141,7 @@ public:
 		return std::move(create_packet_from_builder());
 	}
 
-	Packet create_client_ready() {
+	bs::Packet create_client_ready() {
 		m_host_type->get_logger()->info("Sending client ready request");
 
 		m_builder.Clear();
@@ -157,18 +156,18 @@ public:
 	}
 
 private:
-	Packet create_packet_from_builder() {
+	bs::Packet create_packet_from_builder() {
 		// TODO(DC): Make the init/start api the same for both client and server.
-		if constexpr (std::is_same_v<Host_Type, Host_Server>) {
-			return std::move(Packet(NULL, m_builder.GetBufferPointer(), m_builder.GetSize()));
+		if constexpr (std::is_same_v<Host_Type, bs::Host_Server>) {
+			return std::move(bs::Packet(NULL, m_builder.GetBufferPointer(), m_builder.GetSize()));
 		}
-		else if constexpr (std::is_same_v<Host_Type, Host_Client>) {
-			return std::move(Packet(m_host_type->get_peer(), m_builder.GetBufferPointer(), m_builder.GetSize()));
+		else if constexpr (std::is_same_v<Host_Type, bs::Host_Client>) {
+			return std::move(bs::Packet(m_host_type->get_peer(), m_builder.GetBufferPointer(), m_builder.GetSize()));
 		}
 	}
 
 	flatbuffers::FlatBufferBuilder m_builder;
-	ENet m_enet;
+	bs::ENet m_enet;
 
 	const char* m_host = nullptr;
 	int32_t m_port = -1;

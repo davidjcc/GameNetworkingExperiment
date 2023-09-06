@@ -18,4 +18,6 @@
 
 #define SAFE_DELETE(PTR) if ((PTR != nullptr)) { delete PTR; PTR = nullptr; }
 
-using logger_t = std::shared_ptr<spdlog::logger>;
+namespace bs {
+	using logger_t = std::shared_ptr<spdlog::logger>;
+}

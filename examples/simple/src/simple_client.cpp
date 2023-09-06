@@ -11,7 +11,7 @@
 #include "base_game_host.h"
 
 int main() {
-	Game_Host<Host_Client> client(
+	Game_Host<bs::Host_Client> client(
 		spdlog::stdout_color_mt("CLIENT"),
 		SAMPLES_HOST, SAMPLES_PORT);
 
@@ -25,8 +25,8 @@ int main() {
 	client.set_disconnect_callback([&] {
 		});
 
-	client.set_tick_callback([&](const Game::Message* message, const Packet* packet) {
-		ASSERT_PANIC(client->get_state() == Base_Client::CONNECTED, "Not currently connected");
+	client.set_tick_callback([&](const Game::Message* message, const bs::Packet* packet) {
+		ASSERT_PANIC(client->get_state() == bs::Base_Client::CONNECTED, "Not currently connected");
 
 		// We can now switch on the type returned and act accordingly.
 		auto type = message->payload_type();
