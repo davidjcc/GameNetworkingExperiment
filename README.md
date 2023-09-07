@@ -14,7 +14,8 @@ The samples use the `flatbuffers` library to serialize data. There is a pre-buil
 - [CPM](https://github.com/cpm-cmake/CPM.cmake) - Cmake dependencies management
 - [ENet](http://enet.bespin.org/index.html) - UDP networking library
 - [fmtlib](https://github.com/fmtlib/fmt) - String formatting
-- [spdlog](https://github.com/gabime/spdlog) - Server logging
+- [spdlog](https://github.com/gabime/spdlog) - Logging
+- [raylib](https://github.com/raysan5/raylib) - Rendering
 
 
 ## Example Server
