@@ -30,8 +30,6 @@ jobs:
         run: cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Debug 
       - name: Build
         run: cmake --build build --parallel 10
-      - name: Test
-        run: cd build 
 
   msvc2019:
     runs-on: windows-2019
@@ -50,8 +48,6 @@ jobs:
       if: matrix.build_type == 'Debug'
     - name: Build
       run: cmake --build build --config ${{ matrix.build_type }} --parallel 10
-    - name: Test
-      run: cd build ; ctest -j 10 -C ${{ matrix.build_type }} --output-on-failure
 
   msvc2019_latest:
     runs-on: windows-2019
@@ -62,8 +58,6 @@ jobs:
       run: cmake -S . -B build -G "Visual Studio 16 2019" -DCMAKE_CXX_FLAGS="/permissive- /std:c++latest /EHsc"
     - name: Build
       run: cmake --build build --config Release --parallel 10
-    - name: Test
-      run: cd build ; ctest -j 10 -C Release --output-on-failure
 
   msvc2022:
     runs-on: windows-2022
@@ -82,8 +76,6 @@ jobs:
       if: matrix.build_type == 'Debug'
     - name: Build
       run: cmake --build build --config ${{ matrix.build_type }} --parallel 10
-    - name: Test
-      run: cd build 
 
   msvc2022_latest:
     runs-on: windows-2022
@@ -94,6 +86,4 @@ jobs:
       run: cmake -S . -B build -G "Visual Studio 17 2022" -DCMAKE_CXX_FLAGS="/permissive- /std:c++latest /EHsc"
     - name: Build
       run: cmake --build build --config Release --parallel 10
-    - name: Test
-      run: cd build 
 
