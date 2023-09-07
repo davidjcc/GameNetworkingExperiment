@@ -1,6 +1,6 @@
 # GameNetworkingTest
 [![CMake on multiple platforms](https://github.com/davidjcc/GameNetworkingExperiment/actions/workflows/cmake-multi-platform.yml/badge.svg)](https://github.com/davidjcc/GameNetworkingExperiment/actions/workflows/cmake-multi-platform.yml)
-[![CMake on multiple platforms](https://github.com/davidjcc/GameNetworkingExperiment/actions/workflows/cmake-multi-platform.yml/badge.svg)](https://github.com/davidjcc/GameNetworkingExperiment/actions/workflows/cmake-multi-platform.yml)
+[![Windows](https://github.com/davidjcc/GameNetworkingExperiment/actions/workflows/windows.yml/badge.svg)](https://github.com/davidjcc/GameNetworkingExperiment/actions/workflows/windows.yml)
 
 Experimenting with games networking programming.
 
