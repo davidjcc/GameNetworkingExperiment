@@ -30,7 +30,12 @@ set(BS_SOURCES
 
 add_library(bs STATIC ${BS_SOURCES})
 target_include_directories(bs PUBLIC bs/include ${enet_SOURCE_DIR}/include)
-target_link_libraries(bs PUBLIC spdlog fmt flatbuffers enet Ws2_32)
+
+target_link_libraries(bs PUBLIC spdlog fmt flatbuffers enet)
+
+if (WIN32)
+	target_link_libraries(bs PUBLIC Ws2_32)
+endif()
 
 add_definitions(-D NOMINMAX -D _WINSOCK_DEPRECATED_NO_WARNINGS -D _CRT_SECURE_NO_WARNINGS)
 

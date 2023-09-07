@@ -30,7 +30,7 @@ add_custom_command(
 	OUTPUT ${GENERATED_FILES}
 	COMMAND flatc --cpp -o ${GENERATED_OUTPUT_DIR} ${FBS_FILES}
 	DEPENDS flatc ${FBS_FILES}
-	COMMENT "[SIMPLE] Generating ${FBS_FILES}..."
+	COMMENT "[PONG] Generating ${FBS_FILES}..."
 )
 add_custom_target(GeneratePongMessages DEPENDS ${GENERATED_FILES})
 
@@ -43,7 +43,11 @@ target_include_directories(pong_client PRIVATE
 	${SOURCE_DIR}
 	${GENERATED_OUTPUT_DIR}
 )
-target_link_libraries(pong_client PRIVATE bs fmt Ws2_32 winmm spdlog flatbuffers enet raylib)
+target_link_libraries(pong_client PRIVATE bs fmt spdlog flatbuffers enet raylib)
+if (WIN32)
+	target_link_libraries(bs PUBLIC Ws2_32 winmm)
+endif()
+
 add_dependencies(pong_client GeneratePongMessages)
 
 # -----------------------------
@@ -55,7 +59,12 @@ target_include_directories(pong_server PRIVATE
 	${SOURCE_DIR}
 	${GENERATED_OUTPUT_DIR}
 )
-target_link_libraries(pong_server PRIVATE bs fmt Ws2_32 winmm spdlog flatbuffers enet raylib)
+target_link_libraries(pong_server PRIVATE bs fmt spdlog flatbuffers enet raylib)
+if (WIN32)
+	target_link_libraries(bs PUBLIC Ws2_32 winmm)
+endif()
+
+
 add_dependencies(pong_server GeneratePongMessages)
 
 

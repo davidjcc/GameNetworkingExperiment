@@ -5,8 +5,16 @@
 #include <cassert>
 
 #define ASSERT_PANIC(COND, FMT, ...) \
-	if (!(COND)) { fmt::print("ERROR: {}:{} ", __FUNCTION__, __LINE__); fmt::print(FMT, __VA_ARGS__); fmt::print("\n"); exit(EXIT_FAILURE); }
-#define PANIC(MSG, ...) ASSERT_PANIC(false, MSG, __VA_ARGS__)
+    do { \
+        if (!(COND)) { \
+            fmt::print("ERROR: {}:{} ", __FUNCTION__, __LINE__); \
+            fmt::print(FMT, ##__VA_ARGS__); \
+            fmt::print("\n"); \
+            exit(EXIT_FAILURE); \
+        } \
+    } while(0)
+
+#define PANIC(MSG, ...) ASSERT_PANIC(false, MSG, ##__VA_ARGS__)
 #define UNREACHABLE() ASSERT_PANIC(false, "Unreachable code reached at {}:{}\n", __FILE__, __LINE__)
 #define TODO ASSERT_PANIC(false, "TODO: {}:{}\n", __FILE__, __LINE__)
 

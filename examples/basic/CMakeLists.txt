@@ -8,7 +8,12 @@ function(basic_executable name entrypoint)
 		bs/include
 		${GENERATED_OUTPUT_DIR}
 	)
-	target_link_libraries(${name} PRIVATE bs fmt Ws2_32 winmm spdlog enet)
+	target_link_libraries(${name} PRIVATE bs fmt spdlog enet)
+	if (WIN32)
+		target_link_libraries(bs PUBLIC Ws2_32 winmm)
+	endif()
+
+
 	add_dependencies(${name} GenerateFlatBuffers)
 endfunction()
 
