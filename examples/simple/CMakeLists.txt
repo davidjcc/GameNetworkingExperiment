@@ -15,7 +15,7 @@ set(GENERATED_FILES
 
 add_custom_command(
 	OUTPUT ${GENERATED_FILES}
-	COMMAND ${flatbuffers_BINARY_DIR}/flatc --cpp -o ${GENERATED_OUTPUT_DIR} ${FBS_FILES}
+	COMMAND flatc --cpp -o ${GENERATED_OUTPUT_DIR} ${FBS_FILES}
 	DEPENDS flatc ${FBS_FILES}
 	COMMENT "[SIMPLE] Generating ${FBS_FILES}..."
 )
