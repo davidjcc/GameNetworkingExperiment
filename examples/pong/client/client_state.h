@@ -10,9 +10,10 @@ class Pong_Client_State {
 public:
 	enum State {
 		NONE = 0,
-		IN_GAME,
-		WAITING,
-		ENDED,
+		MULTIPLAYER_IN_GAME,
+		MULTIPLAYER_WAITING,
+		MULTIPLAYER_ENDED,
+		SINGLE_PLAYER,
 		DISCONNECTED
 	};
 
@@ -22,6 +23,9 @@ public:
 	void draw();
 
 	void server_update(const Game::Message* message);
+	bool is_connected() {
+		return m_client->get_state() == bs::Base_Client::CONNECTED;
+	}
 
 	State set_state(const Pong_Client_State::State& state) { m_state = state; }
 	State get_state() const { return m_state; }
@@ -41,7 +45,7 @@ private:
 	float m_ball_vx = 0.0f;
 	float m_ball_vy = 0.0f;
 
-	State m_state = WAITING;
+	State m_state = NONE;
 	bool m_ready = false;
 
 	Game_Host<bs::Host_Client> m_client;
@@ -49,5 +53,7 @@ private:
 	// Server tick rate is set once the server replies with a 
 	// client ready response.
 	int m_server_tick_rate = 0;
+
+	float m_connecting_timer = 0.0f;
 };
 

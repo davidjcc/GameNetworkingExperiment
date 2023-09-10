@@ -21,6 +21,9 @@ namespace bs {
 		_ENetHost* get_host() const { return m_client; }
 		void tick(uint32_t timeout);
 
+		const char* get_host_address() const { return m_host; }
+		int32_t get_port() const { return m_port; }
+
 		bool start(const char* host, int32_t port);
 
 		Ts_Packet_Queue& get_packets() { return m_packets; }

@@ -47,45 +47,6 @@ const char* GameStateToString(Game_State& s) {
 }
 Game_State gameState = WAITING;
 
-void game_state_tick() {
-	for (auto& player : players) {
-		if (player.y < 0) {
-			player.y = 0;
-		}
-
-		if (player.y + PLAYER_HEIGHT > HEIGHT) {
-			player.y = HEIGHT - PLAYER_HEIGHT;
-		}
-
-		ball_x += ball_vx;
-		ball_y += ball_vy;
-
-		if (ball_y < 0) {
-			ball_vy *= -1;
-		}
-
-		if (ball_y + BALL_WIDTH > HEIGHT) {
-			ball_vy *= -1;
-		}
-
-		if (ball_x < 0 || ball_x + BALL_WIDTH > WIDTH) {
-			if (ball_x < 0) {
-				players[1].score++;
-			}
-			else {
-				players[0].score++;
-			}
-			ball_x = WIDTH / 2.0f;
-			ball_y = HEIGHT / 2.0f;
-			ball_vx = 1;
-		}
-
-		if (CheckCollisionRecs({ ball_x, ball_y, BALL_WIDTH, BALL_WIDTH }, { player.x, player.y, PLAYER_WIDTH, PLAYER_HEIGHT })) {
-			ball_vx *= -1.08f;
-		}
-	}
-}
-
 int main() {
 	auto logger = spdlog::stdout_color_mt("SERVER");
 
@@ -231,7 +192,7 @@ int main() {
 			DrawText(TextFormat("Ball: Vel: %.2f, %f Vel: %.2f, %f", ball_vx, ball_vy), x, y += 20, 10, WHITE);
 
 			if (gameState != DISCONNECTED) {
-				game_state_tick();
+				game_state_tick(players, ball_x, ball_y, ball_vx, ball_vy);
 			}
 			break;
 		}
