@@ -156,6 +156,10 @@ void Pong_Client_State::draw() {
 	ClearBackground(BLACK);
 
 	switch (m_state) {
+	case NONE: {
+
+		break;
+	}
 	case WAITING: {
 		DrawText("Waiting for game, press space to ready up", 10, 10, 20, WHITE);
 		DrawText(TextFormat("Ready: %s", m_ready ? "YES" : "NO"), 10, 40, 20, WHITE);
@@ -176,9 +180,9 @@ void Pong_Client_State::draw() {
 			DrawRectangle((int)player.x, (int)player.y, PLAYER_WIDTH, PLAYER_HEIGHT, RAYWHITE);
 		}
 		DrawRectangle((int)m_ball_x, (int)m_ball_y, BALL_WIDTH, BALL_WIDTH, WHITE);
+		DrawText(TextFormat("%d", m_players[0].score), 50, HEIGHT - 50, 50, WHITE);
+		DrawText(TextFormat("%d", m_players[1].score), WIDTH - 100, HEIGHT - 50, 50, WHITE);
 
-		DrawText(TextFormat("%d", m_players[0].score), 10, HEIGHT - 30, 20, WHITE);
-		DrawText(TextFormat("%d", m_players[1].score), WIDTH - 30, HEIGHT - 30, 20, WHITE);
 		break;
 
 	case ENDED: break;
@@ -188,7 +192,6 @@ void Pong_Client_State::draw() {
 		break;
 	}
 	}
-
 
 	EndDrawing();
 }

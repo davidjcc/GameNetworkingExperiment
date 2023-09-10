@@ -158,8 +158,8 @@ int main() {
 				ball_x = WIDTH / 2.0f;
 				ball_y = HEIGHT / 2.0f;
 
-				ball_vx = 1.0f;
-				ball_vy = 1.0f;
+				ball_vx = BALL_INITIAL_SPEED;
+				ball_vy = BALL_INITIAL_SPEED;
 
 				bs::Packet start_packet = server.create_game_starting(player_1.x, player_1.y, player_2.x, player_2.y, ball_x, ball_y, ball_vx, ball_vy);
 				server.get_host_type()->broadcast_to_clients(start_packet, true);
