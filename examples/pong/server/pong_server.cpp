@@ -33,6 +33,7 @@ bool game_started = false;
 enum Game_State {
 	WAITING = 0,
 	PLAYING,
+	PLAYER_SCORED,
 	ENDED,
 	DISCONNECTED,
 };
@@ -68,11 +69,16 @@ void game_state_tick() {
 		}
 
 		if (ball_x < 0 || ball_x + BALL_WIDTH > WIDTH) {
+			if (ball_x < 0) {
+				players[1].score++;
+			}
+			else {
+				players[0].score++;
+			}
 			ball_x = WIDTH / 2.0f;
 			ball_y = HEIGHT / 2.0f;
 			ball_vx = 1;
 		}
-
 
 		if (CheckCollisionRecs({ ball_x, ball_y, BALL_WIDTH, BALL_WIDTH }, { player.x, player.y, PLAYER_WIDTH, PLAYER_HEIGHT })) {
 			ball_vx *= -1.08f;

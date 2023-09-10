@@ -5,7 +5,7 @@
 #include "client_state.h"
 
 int main() {
-	Client_State state{};
+	Pong_Client_State state{};
 	InitWindow(WIDTH, HEIGHT, "Pong");
 
 	SetTargetFPS(60);

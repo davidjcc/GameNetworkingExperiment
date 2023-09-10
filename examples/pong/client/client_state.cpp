@@ -9,7 +9,7 @@
 
 #include <raylib.h>
 
-Client_State::Client_State()
+Pong_Client_State::Pong_Client_State()
 	: m_client(spdlog::stdout_color_mt("CLIENT"), SAMPLES_HOST, SAMPLES_PORT)
 {
 	m_client.set_connect_callback([&] {
@@ -42,10 +42,9 @@ Client_State::Client_State()
 
 		case Game::Any_ClientReadyResponse: {
 			const auto* client_msg = message->payload_as_ClientReadyResponse();
-			m_players[client_msg->slot()].isLocal = true;
+			m_players[client_msg->slot()].is_local = true;
 			break;
 		}
-
 
 		case Game::Any_ClientDisconnected: {
 			const auto* client_msg = message->payload_as_ClientDisconnected();
@@ -60,6 +59,7 @@ Client_State::Client_State()
 			auto update_player = [](Player& player, const Game::Player* player_msg) {
 				player.x = player_msg->position()->x();
 				player.y = player_msg->position()->y();
+				player.score = player_msg->score();
 				};
 
 			update_player(m_players[0], player_1);
@@ -87,6 +87,7 @@ Client_State::Client_State()
 			auto update_player = [](Player& player, const Game::Player* player_msg) {
 				player.x = player_msg->position()->x();
 				player.y = player_msg->position()->y();
+				player.score = player_msg->score();
 				};
 
 			update_player(m_players[0], player_1);
@@ -102,7 +103,7 @@ Client_State::Client_State()
 		}
 
 		default:
-			update(message);
+			server_update(message);
 			break;
 		}
 
@@ -111,7 +112,7 @@ Client_State::Client_State()
 
 
 
-void Client_State::tick(float dt) {
+void Pong_Client_State::tick(float dt) {
 	m_client.tick(m_server_tick_rate);
 
 	switch (m_state) {
@@ -119,7 +120,7 @@ void Client_State::tick(float dt) {
 		for (int i = 0; i < std::size(m_players); ++i) {
 			auto& player = m_players[i];
 
-			if (!player.isLocal) {
+			if (!player.is_local) {
 				continue;
 			}
 
@@ -150,7 +151,7 @@ void Client_State::tick(float dt) {
 	}
 }
 
-void Client_State::draw() {
+void Pong_Client_State::draw() {
 	BeginDrawing();
 	ClearBackground(BLACK);
 
@@ -169,7 +170,7 @@ void Client_State::draw() {
 		for (int i = 0; i < std::size(m_players); ++i) {
 			auto& player = m_players[i];
 
-			if (player.isLocal) {
+			if (player.is_local) {
 				DrawText(TextFormat("Slot ID: %d", i), 10, 10, 10, WHITE);
 			}
 			DrawRectangle((int)player.x, (int)player.y, PLAYER_WIDTH, PLAYER_HEIGHT, RAYWHITE);
@@ -192,9 +193,9 @@ void Client_State::draw() {
 	EndDrawing();
 }
 
-void Client_State::update(const Game::Message* message) {
-	//ASSERT_PANIC(m_state == IN_GAME, "Trying to update the game state while not in game");
-	//ASSERT_PANIC(message->payload_type() == Game::Any_Tick, "Game state receieved message. Expected Game::Any_Tick but got: {}", Game::EnumNameAny(message->payload_type()));
+void Pong_Client_State::server_update(const Game::Message* message) {
+	ASSERT_PANIC(m_state == IN_GAME, "Trying to update the game state while not in game");
+	ASSERT_PANIC(message->payload_type() == Game::Any_Tick, "Game state receieved message. Expected Game::Any_Tick but got: {}", Game::EnumNameAny(message->payload_type()));
 
 	const auto* client_msg = message->payload_as_Tick();
 	const auto* player_1 = client_msg->player_1();

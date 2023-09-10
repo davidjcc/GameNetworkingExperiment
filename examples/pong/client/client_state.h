@@ -6,7 +6,7 @@ namespace Game {
 	struct Message;
 }
 
-class Client_State {
+class Pong_Client_State {
 public:
 	enum State {
 		NONE = 0,
@@ -16,14 +16,14 @@ public:
 		DISCONNECTED
 	};
 
-	Client_State();
+	Pong_Client_State();
 
 	void tick(float dt);
 	void draw();
 
-	void update(const Game::Message* message);
+	void server_update(const Game::Message* message);
 
-	State set_state(const Client_State::State& state) { m_state = state; }
+	State set_state(const Pong_Client_State::State& state) { m_state = state; }
 	State get_state() const { return m_state; }
 
 private:
@@ -32,7 +32,7 @@ private:
 		float y = 0.0f;
 		bool ready = false;
 
-		bool isLocal = false;
+		bool is_local = false;
 		int score = 0;
 	} m_players[2];
 
