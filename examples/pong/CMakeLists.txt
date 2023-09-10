@@ -3,22 +3,7 @@ cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 project(ExamplePong)
 
 # Dependencies
-set(RAYLIB_VERSION 4.2.0)
-find_package(raylib ${RAYLIB_VERSION} QUIET) # QUIET or REQUIRED
-if (NOT raylib_FOUND) # If there's none, fetch and build raylib
-  include(FetchContent)
-  FetchContent_Declare(
-    raylib
-    URL https://github.com/raysan5/raylib/archive/refs/tags/${RAYLIB_VERSION}.tar.gz
-  )
-  FetchContent_GetProperties(raylib)
-  if (NOT raylib_POPULATED) # Have we downloaded raylib yet?
-    set(FETCHCONTENT_QUIET NO)
-    FetchContent_Populate(raylib)
-    set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE) # don't build the supplied examples
-    add_subdirectory(${raylib_SOURCE_DIR} ${raylib_BINARY_DIR})
-  endif()
-endif()
+include(raylib.cmake)
 
 set(SOURCE_DIR ${ExamplePong_SOURCE_DIR})
 
@@ -42,6 +27,7 @@ target_include_directories(pong_client PRIVATE
 	${CMAKE_SOURCE_DIR}/bs/include
 	${SOURCE_DIR}
 	${GENERATED_OUTPUT_DIR}
+	${raygui_SOURCE_DIR}/src
 )
 target_link_libraries(pong_client PRIVATE bs fmt spdlog flatbuffers enet raylib)
 if (WIN32)
@@ -58,6 +44,7 @@ target_include_directories(pong_server PRIVATE
 	${CMAKE_SOURCE_DIR}/bs/include
 	${SOURCE_DIR}
 	${GENERATED_OUTPUT_DIR}
+	${raygui_SOURCE_DIR}/src
 )
 target_link_libraries(pong_server PRIVATE bs fmt spdlog flatbuffers enet raylib)
 if (WIN32)
